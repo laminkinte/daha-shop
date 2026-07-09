@@ -1,6 +1,6 @@
 <div>
     <div class="bg-green-700 text-white rounded-lg shadow p-6 mb-6">
-        <div class="text-sm text-green-100">Cash You Currently Owe MarketHub NG</div>
+        <div class="text-sm text-green-100">Cash You Currently Owe Daha Shop</div>
         <div class="text-3xl font-bold mt-1">{{ naira($totalOwed) }}</div>
         <p class="text-xs text-green-100 mt-2">Please remit this cash at the office. An admin will confirm receipt and clear it from your ledger.</p>
     </div>

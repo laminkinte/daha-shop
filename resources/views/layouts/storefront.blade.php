@@ -18,7 +18,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16 gap-4">
                 <a href="{{ route('storefront.home') }}" wire:navigate class="text-xl font-bold tracking-tight shrink-0">
-                    MarketHub <span class="text-green-200">NG</span>
+                    Daha <span class="text-green-200">Shop</span>
                 </a>
 
                 <form action="{{ route('storefront.home') }}" method="GET" class="hidden md:flex flex-1 max-w-xl">
@@ -78,7 +78,7 @@
 
     <footer class="bg-gray-900 text-gray-400 text-sm mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            &copy; {{ date('Y') }} MarketHub NG — Pay with cash when your order arrives.
+            &copy; {{ date('Y') }} Daha Shop — Pay with cash when your order arrives.
         </div>
     </footer>
 

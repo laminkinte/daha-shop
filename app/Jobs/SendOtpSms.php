@@ -17,6 +17,6 @@ class SendOtpSms implements ShouldQueue
 
     public function handle(SmsGatewayInterface $sms): void
     {
-        $sms->send($this->phone, "Your MarketHub NG confirmation code is {$this->code}. It expires in ".config('markethub.otp.expires_in_minutes').' minutes.');
+        $sms->send($this->phone, "Your Daha Shop confirmation code is {$this->code}. It expires in ".config('markethub.otp.expires_in_minutes').' minutes.');
     }
 }

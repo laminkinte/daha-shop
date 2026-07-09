@@ -14,7 +14,7 @@ class NotifyVendorOfPayout
 
         SendOrderStatusSms::dispatch(
             $payout->vendor->business_phone,
-            "Your MarketHub NG payout of ₦{$nairaAmount} for {$payout->period_start->format('M j')}–{$payout->period_end->format('M j')} has been paid."
+            "Your Daha Shop payout of ₦{$nairaAmount} for {$payout->period_start->format('M j')}–{$payout->period_end->format('M j')} has been paid."
         );
     }
 }

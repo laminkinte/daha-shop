@@ -18,7 +18,7 @@
         <!-- Sidebar -->
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed z-30 inset-y-0 left-0 w-64 bg-gray-900 text-gray-200 transform transition-transform lg:translate-x-0 lg:static lg:inset-auto">
             <div class="h-16 flex items-center px-6 text-lg font-bold border-b border-gray-800">
-                MarketHub <span class="text-green-400 ml-1">NG</span>
+                Daha <span class="text-green-400 ml-1">Shop</span>
             </div>
             <nav class="p-4 space-y-1 text-sm">
                 @auth

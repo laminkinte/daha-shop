@@ -13,7 +13,7 @@ class NotifyCustomerOfOrderConfirmed
 
         SendOrderStatusSms::dispatch(
             $order->address->phone,
-            "Your MarketHub NG order #{$order->order_number} is confirmed and being processed."
+            "Your Daha Shop order #{$order->order_number} is confirmed and being processed."
         );
     }
 }

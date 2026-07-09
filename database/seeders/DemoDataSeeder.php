@@ -42,8 +42,8 @@ class DemoDataSeeder extends Seeder
         }
 
         $admin = User::create([
-            'name' => 'MarketHub Admin',
-            'email' => 'admin@markethub.ng',
+            'name' => 'Daha Shop Admin',
+            'email' => 'admin@dahashop.ng',
             'phone' => '+2348010000001',
             'role' => UserRole::Admin,
             'password' => 'password',
@@ -53,7 +53,7 @@ class DemoDataSeeder extends Seeder
 
         $vendorUser1 = User::create([
             'name' => 'Chinedu Okafor',
-            'email' => 'vendor1@markethub.ng',
+            'email' => 'vendor1@dahashop.ng',
             'phone' => '+2348010000002',
             'role' => UserRole::Vendor,
             'password' => 'password',
@@ -75,7 +75,7 @@ class DemoDataSeeder extends Seeder
 
         $vendorUser2 = User::create([
             'name' => "Ada's Fashion House",
-            'email' => 'vendor2@markethub.ng',
+            'email' => 'vendor2@dahashop.ng',
             'phone' => '+2348010000003',
             'role' => UserRole::Vendor,
             'password' => 'password',
@@ -97,7 +97,7 @@ class DemoDataSeeder extends Seeder
 
         $agentUser = User::create([
             'name' => 'Ibrahim Musa',
-            'email' => 'agent1@markethub.ng',
+            'email' => 'agent1@dahashop.ng',
             'phone' => '+2348010000004',
             'role' => UserRole::Agent,
             'password' => 'password',
@@ -115,7 +115,7 @@ class DemoDataSeeder extends Seeder
 
         $customer1 = User::create([
             'name' => 'Bisi Adewale',
-            'email' => 'customer1@markethub.ng',
+            'email' => 'customer1@dahashop.ng',
             'phone' => '+2348010000005',
             'role' => UserRole::Customer,
             'password' => 'password',
@@ -136,7 +136,7 @@ class DemoDataSeeder extends Seeder
 
         User::create([
             'name' => 'Tunde Bakare',
-            'email' => 'customer2@markethub.ng',
+            'email' => 'customer2@dahashop.ng',
             'phone' => '+2348010000006',
             'role' => UserRole::Customer,
             'password' => 'password',
