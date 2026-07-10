@@ -7,7 +7,7 @@
     @endif
 
     <div class="bg-green-700 text-white rounded-xl px-6 py-8 mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold">Shop Nigeria's marketplace &mdash; pay when it arrives.</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold">Shop the marketplace &mdash; pay when it arrives.</h1>
         <p class="mt-2 text-green-100">No card needed. Confirm by SMS, pay cash on delivery.</p>
     </div>
 
