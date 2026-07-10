@@ -20,12 +20,29 @@ class AuthenticationTest extends TestCase
             ->assertSeeVolt('pages.auth.login');
     }
 
-    public function test_users_can_authenticate_using_the_login_screen(): void
+    public function test_users_can_authenticate_using_their_email(): void
     {
         $user = User::factory()->create();
 
         $component = Volt::test('pages.auth.login')
-            ->set('form.email', $user->email)
+            ->set('form.login', $user->email)
+            ->set('form.password', 'password');
+
+        $component->call('login');
+
+        $component
+            ->assertHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticated();
+    }
+
+    public function test_users_can_authenticate_using_their_phone_number(): void
+    {
+        $user = User::factory()->create(['phone' => '+2348022223333']);
+
+        $component = Volt::test('pages.auth.login')
+            ->set('form.login', $user->phone)
             ->set('form.password', 'password');
 
         $component->call('login');
@@ -42,7 +59,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $component = Volt::test('pages.auth.login')
-            ->set('form.email', $user->email)
+            ->set('form.login', $user->email)
             ->set('form.password', 'wrong-password');
 
         $component->call('login');
