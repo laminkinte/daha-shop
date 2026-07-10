@@ -14,9 +14,9 @@
 </head>
 <body class="font-sans antialiased bg-gray-50 text-gray-900 min-h-screen flex flex-col">
 
-    <header class="bg-green-700 text-white sticky top-0 z-40 shadow">
+    <header class="bg-green-700 text-white sticky top-0 z-40 shadow" x-data="{ mobileSearchOpen: false }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16 gap-4">
+            <div class="flex items-center justify-between h-16 gap-2 sm:gap-4">
                 <a href="{{ route('storefront.home') }}" wire:navigate class="text-xl font-bold tracking-tight shrink-0">
                     Daha <span class="text-green-200">Shop</span>
                 </a>
@@ -34,7 +34,11 @@
                     </button>
                 </form>
 
-                <div class="flex items-center gap-4 shrink-0">
+                <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+                    <button @click="mobileSearchOpen = !mobileSearchOpen" class="md:hidden hover:text-green-200" title="Search">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                    </button>
+
                     <a href="{{ route('storefront.wishlist') }}" wire:navigate class="hover:text-green-200" title="Wishlist">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
                     </a>
@@ -68,6 +72,22 @@
                         <a href="{{ route('register') }}" wire:navigate class="bg-white text-green-700 px-3 py-1.5 rounded-md font-medium hover:bg-green-50">Sign Up</a>
                     @endauth
                 </div>
+            </div>
+
+            <div x-show="mobileSearchOpen" x-cloak x-transition class="md:hidden pb-3">
+                <form action="{{ route('storefront.home') }}" method="GET" class="flex">
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ request('q') }}"
+                        placeholder="Search products..."
+                        autofocus
+                        class="w-full rounded-l-md border-0 px-4 py-2 text-gray-900 focus:ring-2 focus:ring-green-400"
+                    >
+                    <button type="submit" class="rounded-r-md bg-green-900 px-4 py-2 hover:bg-green-950">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
+                    </button>
+                </form>
             </div>
         </div>
     </header>
