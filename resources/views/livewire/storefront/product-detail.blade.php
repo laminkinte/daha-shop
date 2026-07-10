@@ -18,7 +18,7 @@
         <div>
             <p class="text-sm text-gray-400">{{ $product->category->name }}</p>
             <h1 class="text-2xl font-bold text-gray-900 mt-1">{{ $product->name }}</h1>
-            <a href="#" class="text-sm text-green-700">{{ $product->vendor->business_name }}</a>
+            <a href="{{ route('storefront.vendor', $product->vendor->slug) }}" wire:navigate class="text-sm text-green-700 hover:underline">{{ $product->vendor->business_name }}</a>
 
             <div class="mt-4 text-3xl font-bold text-green-700">{{ naira($this->unitPrice) }}</div>
 

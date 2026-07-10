@@ -27,6 +27,7 @@
                         <x-dashboard-nav-link :href="route('vendor.products')" :active="request()->routeIs('vendor.products')">Products</x-dashboard-nav-link>
                         <x-dashboard-nav-link :href="route('vendor.orders')" :active="request()->routeIs('vendor.orders')">Orders</x-dashboard-nav-link>
                         <x-dashboard-nav-link :href="route('vendor.payouts')" :active="request()->routeIs('vendor.payouts')">Payouts</x-dashboard-nav-link>
+                        <x-dashboard-nav-link :href="route('vendor.qr-code')" :active="request()->routeIs('vendor.qr-code')">Shop QR Code</x-dashboard-nav-link>
                     @elseif(auth()->user()->isAdmin())
                         <x-dashboard-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">Overview</x-dashboard-nav-link>
                         <x-dashboard-nav-link :href="route('admin.vendors')" :active="request()->routeIs('admin.vendors')">Vendors</x-dashboard-nav-link>

@@ -18,15 +18,18 @@ use App\Livewire\Storefront\OrderTracking;
 use App\Livewire\Storefront\OtpVerify;
 use App\Livewire\Storefront\ProductCatalog;
 use App\Livewire\Storefront\ProductDetail;
+use App\Livewire\Storefront\VendorShop;
 use App\Livewire\Storefront\Wishlist;
 use App\Livewire\Vendor\Dashboard as VendorDashboard;
 use App\Livewire\Vendor\OrderManager as VendorOrderManager;
 use App\Livewire\Vendor\PayoutHistory;
 use App\Livewire\Vendor\ProductManager;
+use App\Livewire\Vendor\QrCode as VendorQrCode;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ProductCatalog::class)->name('storefront.home');
 Route::get('/products/{product:slug}', ProductDetail::class)->name('storefront.product');
+Route::get('/vendors/{vendor:slug}', VendorShop::class)->name('storefront.vendor');
 Route::get('/cart', Cart::class)->name('storefront.cart');
 
 Route::middleware('auth')->group(function () {
@@ -42,6 +45,7 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
     Route::get('/products', ProductManager::class)->name('products');
     Route::get('/orders', VendorOrderManager::class)->name('orders');
     Route::get('/payouts', PayoutHistory::class)->name('payouts');
+    Route::get('/qr-code', VendorQrCode::class)->name('qr-code');
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
