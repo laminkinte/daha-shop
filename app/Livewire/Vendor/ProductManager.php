@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Vendor;
 
+use App\Enums\ProductStatus;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -20,6 +22,10 @@ class ProductManager extends Component
 
     public ?int $editingId = null;
 
+    public ?ProductStatus $editingStatus = null;
+
+    public ?string $editingRejectionReason = null;
+
     public ?int $categoryId = null;
 
     public string $name = '';
@@ -29,8 +35,6 @@ class ProductManager extends Component
     public string $price = '';
 
     public int $stock = 0;
-
-    public string $status = 'draft';
 
     public $image;
 
@@ -45,16 +49,43 @@ class ProductManager extends Component
         $product = Auth::user()->vendor->products()->findOrFail($productId);
 
         $this->editingId = $product->id;
+        $this->editingStatus = $product->status;
+        $this->editingRejectionReason = $product->rejection_reason;
         $this->categoryId = $product->category_id;
         $this->name = $product->name;
         $this->description = (string) $product->description;
         $this->price = number_format($product->base_price / 100, 2, '.', '');
         $this->stock = $product->stock;
-        $this->status = $product->status;
         $this->showForm = true;
     }
 
-    public function save(): void
+    /**
+     * Whether the product currently being edited already went through
+     * review at least once and is live or waiting on a decision - in
+     * which case editing just updates its fields without resetting
+     * the review state.
+     */
+    public function getIsAwaitingOrLiveProperty(): bool
+    {
+        return in_array($this->editingStatus, [ProductStatus::Published, ProductStatus::PendingReview], true);
+    }
+
+    public function saveAsDraft(): void
+    {
+        $this->persist(ProductStatus::Draft);
+    }
+
+    public function submitForReview(): void
+    {
+        $this->persist(ProductStatus::PendingReview);
+    }
+
+    public function saveChanges(): void
+    {
+        $this->persist($this->editingStatus);
+    }
+
+    private function persist(?ProductStatus $status): void
     {
         $this->validate([
             'categoryId' => 'required|exists:categories,id',
@@ -62,7 +93,6 @@ class ProductManager extends Component
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'status' => 'required|in:draft,published',
             'image' => 'nullable|image|max:4096',
         ]);
 
@@ -75,14 +105,20 @@ class ProductManager extends Component
             'description' => $this->description,
             'base_price' => (int) round(((float) $this->price) * 100),
             'stock' => $this->stock,
-            'status' => $this->status,
+            'status' => $status,
         ];
+
+        if ($status === ProductStatus::PendingReview) {
+            $data['rejection_reason'] = null;
+            $data['reviewed_by'] = null;
+            $data['reviewed_at'] = null;
+        }
 
         if ($this->editingId) {
             $product = $vendor->products()->findOrFail($this->editingId);
             $product->update($data);
         } else {
-            $data['slug'] = \Illuminate\Support\Str::slug($this->name).'-'.\Illuminate\Support\Str::random(6);
+            $data['slug'] = Str::slug($this->name).'-'.Str::random(6);
             $product = Product::create($data);
         }
 
@@ -102,8 +138,7 @@ class ProductManager extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['editingId', 'categoryId', 'name', 'description', 'price', 'stock', 'image']);
-        $this->status = 'draft';
+        $this->reset(['editingId', 'editingStatus', 'editingRejectionReason', 'categoryId', 'name', 'description', 'price', 'stock', 'image']);
     }
 
     public function render()

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Storefront;
 
+use App\Enums\ProductStatus;
 use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -22,6 +23,8 @@ class ProductDetail extends Component
 
     public function mount(Product $product): void
     {
+        abort_unless($product->status === ProductStatus::Published, 404);
+
         $this->product = $product->load(['vendor', 'category', 'images', 'variants', 'reviews.user']);
         $this->variantId = $this->product->variants->first()?->id;
     }

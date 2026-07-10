@@ -31,6 +31,7 @@
                     @elseif(auth()->user()->isAdmin())
                         <x-dashboard-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">Overview</x-dashboard-nav-link>
                         <x-dashboard-nav-link :href="route('admin.vendors')" :active="request()->routeIs('admin.vendors')">Vendors</x-dashboard-nav-link>
+                        <x-dashboard-nav-link :href="route('admin.products')" :active="request()->routeIs('admin.products')">Products</x-dashboard-nav-link>
                         <x-dashboard-nav-link :href="route('admin.orders')" :active="request()->routeIs('admin.orders')">Orders</x-dashboard-nav-link>
                         <x-dashboard-nav-link :href="route('admin.dispatch')" :active="request()->routeIs('admin.dispatch')">Dispatch</x-dashboard-nav-link>
                         <x-dashboard-nav-link :href="route('admin.reconciliation')" :active="request()->routeIs('admin.reconciliation')">Reconciliation</x-dashboard-nav-link>

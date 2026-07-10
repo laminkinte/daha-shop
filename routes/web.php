@@ -6,6 +6,7 @@ use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\DeliveryZoneManager;
 use App\Livewire\Admin\DispatchBoard;
 use App\Livewire\Admin\OrderOverview;
+use App\Livewire\Admin\ProductApprovals;
 use App\Livewire\Admin\ReconciliationDashboard;
 use App\Livewire\Admin\VendorApprovals;
 use App\Livewire\Agent\AssignedDeliveries;
@@ -51,6 +52,7 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboard::class)->name('dashboard');
     Route::get('/vendors', VendorApprovals::class)->name('vendors');
+    Route::get('/products', ProductApprovals::class)->name('products');
     Route::get('/orders', OrderOverview::class)->name('orders');
     Route::get('/dispatch', DispatchBoard::class)->name('dispatch');
     Route::get('/reconciliation', ReconciliationDashboard::class)->name('reconciliation');

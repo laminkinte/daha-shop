@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Storefront;
 
+use App\Enums\ProductStatus;
 use App\Models\Category;
 use App\Models\CartItem;
 use App\Models\Product;
@@ -36,7 +37,7 @@ class ProductCatalog extends Component
 
     public function addToCart(int $productId, CartResolver $resolver): void
     {
-        $product = Product::findOrFail($productId);
+        $product = Product::where('status', ProductStatus::Published)->findOrFail($productId);
         $cart = $resolver->current();
 
         $item = CartItem::firstOrNew([
@@ -56,7 +57,7 @@ class ProductCatalog extends Component
         $categories = Category::whereNull('parent_id')->orderBy('name')->get();
 
         $products = Product::query()
-            ->where('status', 'published')
+            ->where('status', ProductStatus::Published)
             ->when($this->q, fn ($query) => $query->where('name', 'like', "%{$this->q}%"))
             ->when($this->category, fn ($query) => $query->where('category_id', $this->category))
             ->when($this->sort === 'price_low', fn ($query) => $query->orderBy('base_price'))

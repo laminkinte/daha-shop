@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Storefront;
 
+use App\Enums\ProductStatus;
 use App\Enums\VendorStatus;
 use App\Models\CartItem;
 use App\Models\Vendor;
@@ -26,7 +27,7 @@ class VendorShop extends Component
 
     public function addToCart(int $productId, CartResolver $resolver): void
     {
-        $product = $this->vendor->products()->where('status', 'published')->findOrFail($productId);
+        $product = $this->vendor->products()->where('status', ProductStatus::Published)->findOrFail($productId);
         $cart = $resolver->current();
 
         $item = CartItem::firstOrNew([
@@ -44,7 +45,7 @@ class VendorShop extends Component
     public function render()
     {
         $products = $this->vendor->products()
-            ->where('status', 'published')
+            ->where('status', ProductStatus::Published)
             ->with(['images', 'category'])
             ->latest()
             ->paginate(12);
