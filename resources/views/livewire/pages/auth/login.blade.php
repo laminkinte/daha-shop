@@ -25,6 +25,11 @@ new #[Layout('layouts.guest')] class extends Component
 }; ?>
 
 <div>
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-gray-900">Welcome back</h1>
+        <p class="text-sm text-gray-500 mt-1">Log in to your Daha Shop account.</p>
+    </div>
+
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
@@ -51,7 +56,7 @@ new #[Layout('layouts.guest')] class extends Component
         <!-- Remember Me -->
         <div class="block mt-4">
             <label for="remember" class="inline-flex items-center">
-                <input wire:model="form.remember" id="remember" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
+                <input wire:model="form.remember" id="remember" type="checkbox" class="rounded border-gray-300 text-green-600 shadow-sm focus:ring-green-500" name="remember">
                 <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
             </label>
         </div>
@@ -68,4 +73,11 @@ new #[Layout('layouts.guest')] class extends Component
             </x-primary-button>
         </div>
     </form>
+
+    <p class="mt-6 text-sm text-gray-600 text-center">
+        Don't have an account?
+        <a href="{{ route('register') }}" wire:navigate class="font-semibold text-green-700 hover:text-green-800 underline">
+            Register
+        </a>
+    </p>
 </div>

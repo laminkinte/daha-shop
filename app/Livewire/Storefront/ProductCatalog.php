@@ -3,9 +3,11 @@
 namespace App\Livewire\Storefront;
 
 use App\Enums\ProductStatus;
+use App\Enums\VendorStatus;
 use App\Models\Category;
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Models\Vendor;
 use App\Services\CartResolver;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -66,9 +68,15 @@ class ProductCatalog extends Component
             ->with(['vendor', 'category', 'images'])
             ->paginate(12);
 
+        $stats = [
+            'products' => Product::where('status', ProductStatus::Published)->count(),
+            'vendors' => Vendor::where('status', VendorStatus::Approved)->count(),
+        ];
+
         return view('livewire.storefront.product-catalog', [
             'categories' => $categories,
             'products' => $products,
+            'stats' => $stats,
         ]);
     }
 }

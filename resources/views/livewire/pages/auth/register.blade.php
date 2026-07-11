@@ -26,6 +26,13 @@ new #[Layout('layouts.guest')] class extends Component
     public string $business_address = '';
     public string $business_phone = '';
 
+    public function mount(): void
+    {
+        if (request()->query('as') === 'seller') {
+            $this->accountType = 'seller';
+        }
+    }
+
     /**
      * Handle an incoming registration request.
      */
@@ -89,6 +96,11 @@ new #[Layout('layouts.guest')] class extends Component
 }; ?>
 
 <div>
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-gray-900">Create your account</h1>
+        <p class="text-sm text-gray-500 mt-1">Join Daha Shop as a customer, or start selling.</p>
+    </div>
+
     <form wire:submit="register">
 
         <!-- Register Type -->

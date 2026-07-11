@@ -97,8 +97,13 @@
     </main>
 
     <footer class="bg-gray-900 text-gray-400 text-sm mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            &copy; {{ date('Y') }} Daha Shop — Pay with cash when your order arrives.
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span>&copy; {{ date('Y') }} Daha Shop — Pay with cash when your order arrives.</span>
+            @guest
+                <a href="{{ route('register') }}?as=seller" wire:navigate class="text-green-400 hover:text-green-300 font-medium">
+                    Become a Seller &rarr;
+                </a>
+            @endguest
         </div>
     </footer>
 
