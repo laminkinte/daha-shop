@@ -144,6 +144,8 @@
         @endauth
     </nav>
 
+    <livewire:phone-verification-prompt />
+
     @livewireScripts
 </body>
 </html>

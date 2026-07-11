@@ -69,6 +69,8 @@
         </div>
     </div>
 
+    <livewire:phone-verification-prompt />
+
     @livewireScripts
 </body>
 </html>

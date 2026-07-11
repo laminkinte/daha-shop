@@ -5,6 +5,7 @@ use App\Enums\VendorStatus;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Services\ImageClarityChecker;
+use App\Services\OtpService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -23,6 +24,10 @@ new #[Layout('layouts.guest')] class extends Component
     public string $phone = '';
     public string $password = '';
     public string $password_confirmation = '';
+
+    public string $registrationMethod = 'email';
+    public string $pin = '';
+    public string $pin_confirmation = '';
 
     public string $accountType = 'customer';
 
@@ -60,13 +65,24 @@ new #[Layout('layouts.guest')] class extends Component
     /**
      * Handle an incoming registration request.
      */
-    public function register(): void
+    public function register(OtpService $otpService): void
     {
             $validated = $this->validate([
         'name' => ['required', 'string', 'max:255'],
-        'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+
+        'email' => $this->registrationMethod === 'email'
+            ? ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class]
+            : ['nullable'],
+
         'phone' => ['required', 'string', 'max:20', 'unique:'.User::class],
-        'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+
+        'password' => $this->registrationMethod === 'email'
+            ? ['required', 'string', 'confirmed', Rules\Password::defaults()]
+            : ['nullable'],
+
+        'pin' => $this->registrationMethod === 'phone'
+            ? ['required', 'digits:4', 'confirmed']
+            : ['nullable'],
 
         'business_name' => $this->accountType === 'seller'
             ? ['required', 'string', 'max:255']
@@ -99,25 +115,25 @@ new #[Layout('layouts.guest')] class extends Component
             return;
         }
 
-        $validated['password'] = Hash::make($validated['password']);
+        $isPinAccount = $this->registrationMethod === 'phone';
+
+        $baseAttributes = [
+            'name' => $validated['name'],
+            'email' => $isPinAccount
+                ? Str::slug($validated['phone']).'@phone.dahashop.internal'
+                : $validated['email'],
+            'phone' => $validated['phone'],
+            'password' => Hash::make($isPinAccount ? $validated['pin'] : $validated['password']),
+            'uses_pin' => $isPinAccount,
+        ];
 
         if ($this->accountType === 'customer') {
 
-            $validated['role'] = UserRole::Customer;
-
-            $user = User::create($validated);
+            $user = User::create([...$baseAttributes, 'role' => UserRole::Customer]);
 
         } else {
 
-            $validated['role'] = UserRole::Vendor;
-
-            $user = User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'phone' => $validated['phone'],
-                'password' => $validated['password'],
-                'role' => UserRole::Vendor,
-            ]);
+            $user = User::create([...$baseAttributes, 'role' => UserRole::Vendor]);
 
             Vendor::create([
                 'user_id' => $user->id,
@@ -133,6 +149,11 @@ new #[Layout('layouts.guest')] class extends Component
         }
 
         event(new Registered($user));
+
+        // Every new account is "pending" until the phone number is confirmed -
+        // the account works immediately, but a verification prompt follows
+        // the user around the app until this OTP is entered.
+        $otpService->generate($user->phone, 'phone_verification');
 
         Auth::login($user);
 
@@ -171,6 +192,29 @@ new #[Layout('layouts.guest')] class extends Component
             </div>
         </div>
 
+        <!-- Registration Method -->
+        <div class="mb-6">
+            <x-input-label :value="__('Sign Up With')" />
+
+            <div class="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1">
+
+                <button
+                    type="button"
+                    wire:click="$set('registrationMethod', 'email')"
+                    class="rounded-md px-4 py-2 text-sm font-medium transition {{ $registrationMethod === 'email' ? 'bg-green-600 text-white shadow' : 'bg-transparent text-gray-700 hover:bg-gray-200' }}">
+                    Email &amp; Password
+                </button>
+
+                <button
+                    type="button"
+                    wire:click="$set('registrationMethod', 'phone')"
+                    class="rounded-md px-4 py-2 text-sm font-medium transition {{ $registrationMethod === 'phone' ? 'bg-green-600 text-white shadow' : 'bg-transparent text-gray-700 hover:bg-gray-200' }}">
+                    Phone Number &amp; PIN
+                </button>
+
+            </div>
+        </div>
+
         <!-- Name -->
         <div>
             <x-input-label for="name" :value="__('Name')" />
@@ -178,18 +222,23 @@ new #[Layout('layouts.guest')] class extends Component
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
-        <!-- Email -->
-        <div class="mt-4">
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="email" id="email" class="block mt-1 w-full" type="email" required />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
+        @if ($registrationMethod === 'email')
+            <!-- Email -->
+            <div class="mt-4">
+                <x-input-label for="email" :value="__('Email')" />
+                <x-text-input wire:model="email" id="email" class="block mt-1 w-full" type="email" required />
+                <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            </div>
+        @endif
 
         <!-- Phone -->
         <div class="mt-4">
             <x-input-label for="phone" :value="__('Phone Number')" />
             <x-text-input wire:model="phone" id="phone" class="block mt-1 w-full" type="text" required />
             <x-input-error :messages="$errors->get('phone')" class="mt-2" />
+            @if ($registrationMethod === 'phone')
+                <p class="text-xs text-gray-500 mt-1">We'll text a code here to confirm it's really you.</p>
+            @endif
         </div>
 
         @if ($accountType === 'seller')
@@ -276,19 +325,35 @@ new #[Layout('layouts.guest')] class extends Component
 
         @endif
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-            <x-text-input wire:model="password" id="password" class="block mt-1 w-full" type="password" required />
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
+        @if ($registrationMethod === 'email')
+            <!-- Password -->
+            <div class="mt-4">
+                <x-input-label for="password" :value="__('Password')" />
+                <x-text-input wire:model="password" id="password" class="block mt-1 w-full" type="password" required />
+                <x-input-error :messages="$errors->get('password')" class="mt-2" />
+            </div>
 
-        <!-- Confirm Password -->
-        <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-            <x-text-input wire:model="password_confirmation" id="password_confirmation" class="block mt-1 w-full" type="password" required />
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-        </div>
+            <!-- Confirm Password -->
+            <div class="mt-4">
+                <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+                <x-text-input wire:model="password_confirmation" id="password_confirmation" class="block mt-1 w-full" type="password" required />
+                <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+            </div>
+        @else
+            <!-- PIN -->
+            <div class="mt-4">
+                <x-input-label for="pin" :value="__('4-Digit PIN')" />
+                <x-text-input wire:model="pin" id="pin" class="block mt-1 w-full tracking-[0.5em] text-center" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" required />
+                <x-input-error :messages="$errors->get('pin')" class="mt-2" />
+            </div>
+
+            <!-- Confirm PIN -->
+            <div class="mt-4">
+                <x-input-label for="pin_confirmation" :value="__('Confirm PIN')" />
+                <x-text-input wire:model="pin_confirmation" id="pin_confirmation" class="block mt-1 w-full tracking-[0.5em] text-center" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" required />
+                <x-input-error :messages="$errors->get('pin_confirmation')" class="mt-2" />
+            </div>
+        @endif
 
         <div class="mt-6">
 

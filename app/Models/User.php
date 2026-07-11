@@ -25,8 +25,10 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
+        'phone_verified_at',
         'role',
         'password',
+        'uses_pin',
     ];
 
     /**
@@ -51,6 +53,7 @@ class User extends Authenticatable
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'uses_pin' => 'boolean',
         ];
     }
 
@@ -102,5 +105,10 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    public function isPhoneVerified(): bool
+    {
+        return $this->phone_verified_at !== null;
     }
 }
