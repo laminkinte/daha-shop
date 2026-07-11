@@ -4,6 +4,7 @@ use App\Enums\UserRole;
 use App\Enums\VendorStatus;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Services\ImageClarityChecker;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -11,9 +12,12 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
 
 new #[Layout('layouts.guest')] class extends Component
 {
+    use WithFileUploads;
+
     public string $name = '';
     public string $email = '';
     public string $phone = '';
@@ -26,11 +30,31 @@ new #[Layout('layouts.guest')] class extends Component
     public string $business_address = '';
     public string $business_phone = '';
 
+    public string $idDocumentType = 'national_id';
+    public $idDocument;
+    public $selfie;
+    public ?string $idDocumentClarityWarning = null;
+    public ?string $selfieClarityWarning = null;
+
     public function mount(): void
     {
         if (request()->query('as') === 'seller') {
             $this->accountType = 'seller';
         }
+    }
+
+    public function updatedIdDocument(ImageClarityChecker $checker): void
+    {
+        $this->idDocumentClarityWarning = ($this->idDocument && ! $checker->isClear($this->idDocument->getRealPath()))
+            ? "This photo looks blurry or unclear. Please retake it in good lighting."
+            : null;
+    }
+
+    public function updatedSelfie(ImageClarityChecker $checker): void
+    {
+        $this->selfieClarityWarning = ($this->selfie && ! $checker->isClear($this->selfie->getRealPath()))
+            ? "This photo looks blurry or unclear. Please retake it in good lighting."
+            : null;
     }
 
     /**
@@ -55,7 +79,25 @@ new #[Layout('layouts.guest')] class extends Component
         'business_address' => $this->accountType === 'seller'
             ? ['required', 'string']
             : ['nullable'],
+
+        'idDocumentType' => $this->accountType === 'seller'
+            ? ['required', 'in:national_id,passport']
+            : ['nullable'],
+
+        'idDocument' => $this->accountType === 'seller'
+            ? ['required', 'image', 'max:5120']
+            : ['nullable'],
+
+        'selfie' => $this->accountType === 'seller'
+            ? ['required', 'image', 'max:5120']
+            : ['nullable'],
     ]);
+
+        if ($this->accountType === 'seller' && ($this->idDocumentClarityWarning || $this->selfieClarityWarning)) {
+            $this->addError('idDocument', 'Please retake any blurry photos before submitting.');
+
+            return;
+        }
 
         $validated['password'] = Hash::make($validated['password']);
 
@@ -84,6 +126,9 @@ new #[Layout('layouts.guest')] class extends Component
                 'business_phone' => $validated['business_phone'],
                 'business_address' => $validated['business_address'],
                 'status' => VendorStatus::Pending,
+                'id_document_type' => $this->idDocumentType,
+                'id_document_path' => $this->idDocument->store('vendor-kyc', 'local'),
+                'selfie_path' => $this->selfie->store('vendor-kyc', 'local'),
             ]);
         }
 
@@ -168,6 +213,65 @@ new #[Layout('layouts.guest')] class extends Component
                     class="block mt-1 w-full rounded-md border-gray-300 shadow-sm"
                     rows="3"></textarea>
                 <x-input-error :messages="$errors->get('business_address')" class="mt-2" />
+            </div>
+
+            <div class="mt-6 border-t border-gray-200 pt-4">
+                <h2 class="text-sm font-semibold text-gray-800">Identity Verification</h2>
+                <p class="text-xs text-gray-500 mt-1">
+                    Required before your seller account can be approved. An admin reviews these before you can list products.
+                </p>
+            </div>
+
+            <div class="mt-4">
+                <x-input-label :value="__('ID Document Type')" />
+                <select wire:model="idDocumentType" class="mt-1 w-full rounded-md border-gray-300 focus:border-green-500 focus:ring-green-500">
+                    <option value="national_id">National ID Card</option>
+                    <option value="passport">International Passport</option>
+                </select>
+                <x-input-error :messages="$errors->get('idDocumentType')" class="mt-2" />
+            </div>
+
+            <div class="mt-4">
+                <x-input-label :value="__('ID Document Photo')" />
+
+                <div x-data="{ mode: 'upload' }" class="mt-1">
+                    <div class="flex gap-2 mb-2 text-xs">
+                        <button type="button" @click="mode = 'upload'" :class="mode === 'upload' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'" class="px-3 py-1.5 rounded-md font-medium">
+                            Upload Photo
+                        </button>
+                        <button type="button" @click="mode = 'camera'" :class="mode === 'camera' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'" class="px-3 py-1.5 rounded-md font-medium">
+                            Use Camera
+                        </button>
+                    </div>
+
+                    <div x-show="mode === 'upload'">
+                        <input type="file" wire:model="idDocument" accept="image/*" class="block w-full text-sm">
+                        <div wire:loading wire:target="idDocument" class="text-xs text-gray-500 mt-1">Checking image clarity&hellip;</div>
+                    </div>
+
+                    <div x-show="mode === 'camera'" x-cloak>
+                        <x-camera-capture wireModel="idDocument" label="Capture ID Document" />
+                    </div>
+                </div>
+
+                <x-input-error :messages="$errors->get('idDocument')" class="mt-2" />
+                @if ($idDocumentClarityWarning)
+                    <p class="text-xs text-red-600 mt-1">{{ $idDocumentClarityWarning }}</p>
+                @endif
+            </div>
+
+            <div class="mt-4">
+                <x-input-label :value="__('Live Selfie')" />
+                <p class="text-xs text-gray-500 mb-2">
+                    We ask for a live camera photo, not an upload, so an admin can confirm it matches your ID document.
+                </p>
+
+                <x-camera-capture wireModel="selfie" label="Capture Selfie" />
+
+                <x-input-error :messages="$errors->get('selfie')" class="mt-2" />
+                @if ($selfieClarityWarning)
+                    <p class="text-xs text-red-600 mt-1">{{ $selfieClarityWarning }}</p>
+                @endif
             </div>
 
         @endif

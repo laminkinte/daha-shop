@@ -13,6 +13,7 @@ class Vendor extends Model
         'user_id', 'business_name', 'slug', 'business_phone', 'business_address',
         'state_id', 'lga_id', 'cac_number', 'status',
         'bank_name', 'bank_account_number', 'bank_account_name', 'approved_at',
+        'id_document_type', 'id_document_path', 'selfie_path',
     ];
 
     protected function casts(): array

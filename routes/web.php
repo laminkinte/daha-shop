@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\VendorDocumentController;
 use App\Livewire\Admin\AgentManager;
 use App\Livewire\Admin\BlacklistManager;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
@@ -52,6 +53,7 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboard::class)->name('dashboard');
     Route::get('/vendors', VendorApprovals::class)->name('vendors');
+    Route::get('/vendors/{vendor}/document/{type}', [VendorDocumentController::class, 'show'])->name('vendors.document');
     Route::get('/products', ProductApprovals::class)->name('products');
     Route::get('/orders', OrderOverview::class)->name('orders');
     Route::get('/dispatch', DispatchBoard::class)->name('dispatch');
