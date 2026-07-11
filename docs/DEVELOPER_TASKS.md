@@ -1,170 +1,72 @@
 # Next Development Tasks — Daha Shop
 
-This document is a handoff spec for the next round of changes. It assumes familiarity with the
-existing codebase (Laravel 12 + Livewire 3 + Tailwind, MySQL). See `README.md` and the code
-itself for how the COD order lifecycle, roles, and services are structured before starting.
-
-Four tasks, in the order they should be tackled (later ones build on earlier ones):
-
-1. Rebrand to "Daha Shop"
-2. Mobile responsiveness pass
-3. Split registration into Customer vs Seller
-4. Seller ID verification (national ID card / passport)
+Previous round (rebrand, mobile search fix, customer/seller registration split, seller ID
+verification) is done and merged. This is the next batch, grouped by priority.
 
 ---
 
-## 1. Rebrand: "MarketHub NG" → "Daha Shop"
+## Tier 1 — Things that are currently faked and need to become real
 
-Find every occurrence first:
+**1. Real SMS gateway.** OTP codes and order-status messages currently just get written to
+`storage/logs/laravel.log` (`App\Services\Sms\LogSmsGateway`) because there's no real gateway
+account. `App\Services\Sms\TermiiSmsGateway` already exists and implements the same interface —
+someone needs to create a Termii (or similar) account, add the API key to `.env`
+(`MARKETHUB_SMS_GATEWAY=termii`, `TERMII_API_KEY`, `TERMII_SENDER_ID`), and confirm real OTP texts
+actually arrive on a real Nigerian number.
 
-```bash
-grep -rli "markethub" --include="*.php" --include="*.blade.php" --include="*.md" .
-```
+**2. Real email delivery.** `MAIL_MAILER=log` — password reset and verification emails aren't
+being sent anywhere. Needs a real provider (Postmark/SES/Resend are already referenced in
+`config/services.php`) wired up in `.env` and tested end to end.
 
-Update:
-- `.env` and `.env.example` — `APP_NAME="Daha Shop"`
-- `resources/views/layouts/storefront.blade.php` — the literal `MarketHub <span>NG</span>` logo text in the header
-- `resources/views/layouts/dashboard.blade.php` — the sidebar logo text
-- `resources/views/layouts/storefront.blade.php` footer copyright line
-- `app/Jobs/SendOtpSms.php` — the SMS message text ("Your MarketHub NG confirmation code...")
-- `app/Listeners/NotifyVendorOfPayout.php` — the payout SMS message text
-- `README.md`
-
-**Leave alone:** `config/markethub.php` and every `config('markethub.xxx')` call throughout the
-services (`CheckoutService`, `OtpService`, `VendorOrderService`, etc.). That's just an internal
-config namespace key, not user-facing text — renaming it means touching ~10 files for zero visible
-change. Only rename it if you want internal consistency; it's cosmetic, not required.
-
-Optional/cosmetic: the demo seeder (`database/seeders/DemoDataSeeder.php`) uses
-`@markethub.ng` email addresses for the seeded demo accounts. Fine to leave as-is (it's just
-placeholder test data), or update to `@dahashop.ng` if you want the demo data to match visually
-when you show it to people.
+**3. Camera capture on real devices.** The ID/selfie capture (`getUserMedia` + Livewire's JS
+upload API, in `resources/views/components/camera-capture.blade.php`) was built and tested in a
+desktop browser context only. It needs a human to actually test on real Android and iPhone
+hardware — iOS Safari in particular has known quirks with camera permissions and autoplay that
+don't show up until you test on a real device.
 
 ---
 
-## 2. Mobile Responsiveness Pass
+## Tier 2 — Explicitly deferred from the original build, still deferred
 
-The app was built mobile-first with Tailwind, but a few specific spots need attention. Test at
-320px, 375px, and 414px widths using browser devtools' device toolbar.
-
-**Known gaps to fix:**
-
-- `resources/views/layouts/storefront.blade.php` — the search bar is `hidden md:flex`, meaning
-  **mobile users currently have no way to search at all**. Add a search icon button (`md:hidden`)
-  in the header that toggles a full-width search input below the header row (Alpine `x-show`).
-- `resources/views/livewire/storefront/cart.blade.php` — each cart row is a single fixed-width
-  flex row (image + name + quantity input + price, several fixed `w-*` classes). On a 320–375px
-  screen this can overflow or crowd. Make it stack: `flex-col sm:flex-row` with the price/quantity
-  controls moving to their own row on mobile.
-- Any modal (`app/Livewire/Vendor/ProductManager.php`'s form modal, `Admin/AgentManager.php`'s
-  onboarding modal, `Admin/DeliveryZoneManager.php`'s modal) — check they scroll on short mobile
-  viewports. Add `max-h-[90vh] overflow-y-auto` to the modal panel div if content gets cut off.
-- Header icon row (`storefront.blade.php`) — verify the wishlist icon, cart icon, and login/signup
-  buttons don't wrap awkwardly at 320px. Reduce `gap-4` to `gap-2 sm:gap-4` if needed.
-
-There's no dedicated visual regression tooling in this repo — verify by hand in a real mobile
-browser or devtools, then spot-check the existing Livewire feature tests still pass
-(`php artisan test`) since none of this should change component behavior, only markup/classes.
+- **CSV/Excel bulk product upload** for vendors (currently one-at-a-time only, in
+  `app/Livewire/Vendor/ProductManager.php`).
+- **Fraud scoring beyond the basic blacklist.** Right now checkout only blocks phone numbers an
+  admin has manually blacklisted. A real scoring system (e.g. flag customers with N recent
+  rejected/cancelled orders) doesn't exist yet.
+- **3rd-party logistics integration** (GIG Logistics, Kwik, Sendbox) as an alternative to the
+  in-house agent-dispatch flow that exists today.
+- **Paystack/Flutterwave prepaid option.** COD is the only payment method. The schema doesn't
+  hard-code COD-only assumptions, so this is additive, not a rewrite.
 
 ---
 
-## 3. Split Registration: Customer vs Seller
+## Tier 3 — Business ideas discussed, not yet built
 
-File: `resources/views/livewire/pages/auth/register.blade.php` (a Volt anonymous class component).
-
-Add an account-type toggle at the top of the form — two buttons/tabs, "Register as a Customer" and
-"Register as a Seller" — bound to a new public property, e.g. `public string $accountType = 'customer';`.
-
-- **Customer path**: unchanged — name, email, phone, password.
-- **Seller path**: same base fields, plus:
-  - `business_name` (string, required)
-  - `business_address` (string, required)
-  - `business_phone` (string, required — can default to the personal phone field)
-  - ID document type: `national_id` or `passport` (select)
-  - ID document upload (see Task 4 below — the file field lives here, but don't wire up storage
-    until you've read Task 4's security note)
-
-On submit:
-- Always create the `User` row. Set `role` to `UserRole::Vendor` or `UserRole::Customer` based on
-  `$accountType`.
-- If seller: also create a `Vendor` row with `status = VendorStatus::Pending` (this already
-  matches the existing admin-approval flow in `app/Livewire/Admin/VendorApprovals.php` — sellers
-  who register are **not** immediately able to list products; they wait for admin approval, same
-  as before, just now admin approval also means "and I reviewed their ID").
-
-Look at how `App\Enums\UserRole` and `App\Models\Vendor` are already used in
-`database/seeders/DemoDataSeeder.php` for the shape of a `Vendor::create([...])` call — copy that
-pattern.
+- **Vendor subscription tiers** tied to delivery service level (faster dispatch/payout for paid
+  tiers) — discussed as the recommended monetization model, not implemented.
+- **Real biometric face-matching** (Smile Identity / AWS Rekognition / similar) to replace the
+  current manual admin side-by-side photo comparison in Admin → Vendors. Needs a paid account;
+  the capture/storage layer is already built to slot this in later.
+- **Property/house rental vertical** — discussed as a possible expansion reusing the existing
+  Product/Vendor pattern (a "Property" listing shaped like a "Product," a landlord like a
+  vendor). Not started.
 
 ---
 
-## 4. Seller ID Verification (Manual Upload + Admin Review)
+## Tier 4 — Polish and hardening
 
-**Decision made for this iteration:** manual document upload reviewed by a human admin — no
-third-party KYC API (Smile Identity / VerifyMe / Youverify) integration. That's a larger, paid,
-separate piece of work if it's wanted later; the schema below doesn't block adding it.
-
-### Migration
-
-Add two nullable columns to `vendors`:
-
-```php
-$table->string('id_document_path')->nullable();
-$table->string('id_document_type')->nullable(); // 'national_id' | 'passport'
-```
-
-### ⚠️ Security requirement — read this before writing any code
-
-**Do not store the ID document on the `public` disk.** A national ID or passport scan on the
-`public` disk sits at a guessable, unauthenticated URL (`/storage/vendor-kyc/xxxx.jpg`) — anyone
-with the link can view it, and Laravel's public disk has no access control at all. This is
-sensitive PII; treat it accordingly:
-
-- Store it on the **`local`** disk instead: `$this->idDocument->store('vendor-kyc', 'local')`.
-  This puts it in `storage/app/private/vendor-kyc/...` (or `storage/app/vendor-kyc/...` depending
-  on your `config/filesystems.php` `local` root), which is **not** web-accessible at all.
-- Add a new route + controller, gated by `auth` + `role:admin` middleware, that streams the file
-  to a logged-in admin on demand:
-
-  ```php
-  Route::middleware(['auth', 'role:admin'])->get(
-      '/admin/vendors/{vendor}/id-document',
-      [AdminVendorDocumentController::class, 'show']
-  )->name('admin.vendors.id-document');
-  ```
-
-  ```php
-  public function show(Vendor $vendor)
-  {
-      abort_unless($vendor->id_document_path, 404);
-
-      return Storage::disk('local')->response($vendor->id_document_path);
-  }
-  ```
-
-- In `app/Livewire/Admin/VendorApprovals.php`'s view, add a "View ID Document" link to that route
-  next to each pending vendor, so the admin can actually look at it before clicking Approve.
-- Double check `storage/app/private` (or wherever `local` disk resolves) is covered by
-  `.gitignore` — it already should be via Laravel's default `storage/*` ignore rules, but verify
-  nothing under there ever gets committed.
-
-### Testing
-
-Add a test (follow the pattern in `tests/Feature/RoleAccessTest.php`) asserting:
-1. A seller can register with an ID upload and ends up `VendorStatus::Pending`.
-2. The stored file path is **not** reachable via a plain `GET /storage/...` request (i.e. it's
-   actually on the private disk, not public).
-3. A non-admin user gets `403` hitting the new `admin.vendors.id-document` route; an admin gets
-   the file back.
+- **Remaining mobile responsiveness gaps**: cart row layout may still crowd on very narrow
+  (320–375px) screens, and the three modal-based forms (vendor product form, admin agent
+  onboarding, admin delivery zone) should be checked for scroll behavior on short viewports.
+  Only the missing-mobile-search-bar item was actually fixed; these others were flagged earlier
+  but never verified.
+- **CAC number verification.** Vendor registration collects an optional CAC (business
+  registration) number as free text with no validation against Nigeria's actual CAC registry.
+- **A dedicated security review pass** — the app now handles cash reconciliation and KYC
+  documents (ID photos, selfies); worth a focused review beyond normal feature testing before
+  handling real money/real user documents.
 
 ---
 
-## Suggested Order of Work
-
-1. Rebrand first (quick, no logic changes, easy to verify visually).
-2. Mobile pass second (also low-risk, markup-only).
-3. Registration split third (adds the `accountType` toggle and Vendor-on-register logic).
-4. ID verification last (depends on the registration form already existing from step 3).
-
-Run `php artisan test` after each step — the existing suite (37 tests) should stay green throughout
-since none of this changes the core order/checkout/reconciliation logic.
+Run `php artisan test` after any change — 57 tests currently pass and cover the full order
+lifecycle, registration, product moderation, and seller verification flows.
