@@ -10,8 +10,11 @@ class CartIcon extends Component
 {
     public int $count = 0;
 
-    public function mount(CartResolver $resolver): void
+    public string $variant = 'header';
+
+    public function mount(CartResolver $resolver, string $variant = 'header'): void
     {
+        $this->variant = $variant;
         $this->refreshCount($resolver);
     }
 

@@ -131,4 +131,26 @@ class StorefrontLivewireTest extends TestCase
 
         $this->assertSame(\App\Enums\ConfirmationStatus::Confirmed, $order->fresh()->confirmation_status);
     }
+
+    public function test_mobile_bottom_bar_shows_login_and_signup_for_guests(): void
+    {
+        $this->get(route('storefront.home'))
+            ->assertOk()
+            ->assertSee('Login')
+            ->assertSee('Sign Up')
+            ->assertDontSee('Orders')
+            ->assertDontSee('Account');
+    }
+
+    public function test_mobile_bottom_bar_shows_orders_and_account_for_authenticated_users(): void
+    {
+        $customer = User::factory()->create();
+
+        $this->actingAs($customer)
+            ->get(route('storefront.home'))
+            ->assertOk()
+            ->assertSee('Orders')
+            ->assertSee('Account')
+            ->assertDontSee('Sign Up');
+    }
 }
