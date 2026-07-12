@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PaymentGateway;
 use App\Enums\SubscriptionPlan;
 use App\Enums\SubscriptionStatus;
 use App\Enums\VendorStatus;
@@ -63,7 +64,7 @@ class VendorSubscriptionTest extends TestCase
 
         Http::assertSent(function ($request) use ($subscription) {
             return $request->url() === 'https://api.paystack.co/transaction/initialize'
-                && $request['reference'] === $subscription->paystack_reference
+                && $request['reference'] === $subscription->reference
                 && $request['amount'] === 500000;
         });
     }
@@ -77,7 +78,7 @@ class VendorSubscriptionTest extends TestCase
             'plan' => SubscriptionPlan::Monthly,
             'amount' => 500000,
             'status' => SubscriptionStatus::Pending,
-            'paystack_reference' => 'sub_ref_2',
+            'reference' => 'sub_ref_2',
         ]);
 
         Http::fake([
@@ -108,7 +109,7 @@ class VendorSubscriptionTest extends TestCase
             'plan' => SubscriptionPlan::Monthly,
             'amount' => 500000,
             'status' => SubscriptionStatus::Pending,
-            'paystack_reference' => 'sub_ref_3',
+            'reference' => 'sub_ref_3',
         ]);
 
         Http::fake([
@@ -121,7 +122,7 @@ class VendorSubscriptionTest extends TestCase
         $this->actingAs($vendor->user)
             ->get(route('vendor.subscription.callback', ['reference' => 'sub_ref_3']));
 
-        $this->assertSame(SubscriptionStatus::Failed, VendorSubscription::where('paystack_reference', 'sub_ref_3')->firstOrFail()->status);
+        $this->assertSame(SubscriptionStatus::Failed, VendorSubscription::where('reference', 'sub_ref_3')->firstOrFail()->status);
         $this->assertFalse($vendor->fresh()->hasActiveSubscription());
     }
 
@@ -136,7 +137,7 @@ class VendorSubscriptionTest extends TestCase
             'plan' => SubscriptionPlan::Annual,
             'amount' => 5000000,
             'status' => SubscriptionStatus::Pending,
-            'paystack_reference' => 'sub_ref_4',
+            'reference' => 'sub_ref_4',
         ]);
 
         Http::fake([
@@ -156,7 +157,7 @@ class VendorSubscriptionTest extends TestCase
 
         $response->assertOk();
 
-        $subscription = VendorSubscription::where('paystack_reference', 'sub_ref_4')->firstOrFail();
+        $subscription = VendorSubscription::where('reference', 'sub_ref_4')->firstOrFail();
         $this->assertSame(SubscriptionStatus::Active, $subscription->status);
     }
 
@@ -171,7 +172,7 @@ class VendorSubscriptionTest extends TestCase
             'plan' => SubscriptionPlan::Monthly,
             'amount' => 500000,
             'status' => SubscriptionStatus::Pending,
-            'paystack_reference' => 'sub_ref_5',
+            'reference' => 'sub_ref_5',
         ]);
 
         $payload = json_encode(['event' => 'charge.success', 'data' => ['reference' => 'sub_ref_5']]);
@@ -183,7 +184,7 @@ class VendorSubscriptionTest extends TestCase
 
         $response->assertStatus(401);
 
-        $this->assertSame(SubscriptionStatus::Pending, VendorSubscription::where('paystack_reference', 'sub_ref_5')->firstOrFail()->status);
+        $this->assertSame(SubscriptionStatus::Pending, VendorSubscription::where('reference', 'sub_ref_5')->firstOrFail()->status);
     }
 
     public function test_vendor_without_active_subscription_cannot_open_new_product_form(): void
@@ -212,7 +213,7 @@ class VendorSubscriptionTest extends TestCase
             'paid_at' => now(),
             'starts_at' => now(),
             'expires_at' => now()->addMonth(),
-            'paystack_reference' => 'sub_ref_6',
+            'reference' => 'sub_ref_6',
         ]);
 
         Livewire::actingAs($vendor->user)
@@ -235,7 +236,7 @@ class VendorSubscriptionTest extends TestCase
             'paid_at' => now()->subDays(20),
             'starts_at' => now()->subDays(20),
             'expires_at' => $existingExpiry,
-            'paystack_reference' => 'sub_ref_7',
+            'reference' => 'sub_ref_7',
         ]);
 
         $renewal = VendorSubscription::create([
@@ -243,7 +244,7 @@ class VendorSubscriptionTest extends TestCase
             'plan' => SubscriptionPlan::Monthly,
             'amount' => 500000,
             'status' => SubscriptionStatus::Pending,
-            'paystack_reference' => 'sub_ref_8',
+            'reference' => 'sub_ref_8',
         ]);
 
         Http::fake([
@@ -271,7 +272,7 @@ class VendorSubscriptionTest extends TestCase
             'paid_at' => now()->subMonths(2),
             'starts_at' => now()->subMonths(2),
             'expires_at' => now()->subDay(),
-            'paystack_reference' => 'sub_ref_9',
+            'reference' => 'sub_ref_9',
         ]);
 
         $stillActive = VendorSubscription::create([
@@ -282,12 +283,167 @@ class VendorSubscriptionTest extends TestCase
             'paid_at' => now(),
             'starts_at' => now(),
             'expires_at' => now()->addMonth(),
-            'paystack_reference' => 'sub_ref_10',
+            'reference' => 'sub_ref_10',
         ]);
 
         $this->artisan('app:expire-vendor-subscriptions')->assertExitCode(0);
 
         $this->assertSame(SubscriptionStatus::Expired, $expired->fresh()->status);
         $this->assertSame(SubscriptionStatus::Active, $stillActive->fresh()->status);
+    }
+
+    public function test_subscribing_with_opay_initializes_and_redirects_to_cashier_url(): void
+    {
+        Http::fake([
+            'sandboxapi.opaycheckout.com/api/v1/international/cashier/create' => Http::response([
+                'code' => '00000',
+                'message' => 'SUCCESSFUL',
+                'data' => [
+                    'reference' => 'sub_ref_opay_1',
+                    'orderNo' => '211009140896553163',
+                    'cashierUrl' => 'https://sandboxcashier.opaycheckout.com/checkout/abc123',
+                    'status' => 'INITIAL',
+                ],
+            ], 200),
+        ]);
+
+        $vendor = $this->makeVendor();
+
+        Livewire::actingAs($vendor->user)
+            ->test(Subscription::class)
+            ->set('selectedPlan', 'monthly')
+            ->set('selectedGateway', 'opay')
+            ->call('subscribe')
+            ->assertRedirect('https://sandboxcashier.opaycheckout.com/checkout/abc123');
+
+        $subscription = VendorSubscription::where('vendor_id', $vendor->id)->firstOrFail();
+
+        $this->assertSame(PaymentGateway::Opay, $subscription->gateway);
+        $this->assertSame(SubscriptionStatus::Pending, $subscription->status);
+
+        Http::assertSent(function ($request) use ($subscription) {
+            return $request->url() === 'https://sandboxapi.opaycheckout.com/api/v1/international/cashier/create'
+                && $request['reference'] === $subscription->reference
+                && $request['amount']['total'] === 500000
+                && $request['amount']['currency'] === 'NGN'
+                && str_contains($request['returnUrl'], 'reference='.$subscription->reference);
+        });
+    }
+
+    public function test_opay_callback_activates_subscription_when_status_query_reports_success(): void
+    {
+        $vendor = $this->makeVendor();
+
+        $subscription = VendorSubscription::create([
+            'vendor_id' => $vendor->id,
+            'gateway' => PaymentGateway::Opay,
+            'plan' => SubscriptionPlan::Monthly,
+            'amount' => 500000,
+            'status' => SubscriptionStatus::Pending,
+            'reference' => 'sub_ref_opay_2',
+        ]);
+
+        Http::fake([
+            'sandboxapi.opaycheckout.com/api/v1/international/cashier/status' => Http::response([
+                'code' => '00000',
+                'message' => 'SUCCESSFUL',
+                'data' => ['reference' => 'sub_ref_opay_2', 'status' => 'SUCCESS'],
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($vendor->user)
+            ->get(route('vendor.subscription.callback', ['reference' => 'sub_ref_opay_2']));
+
+        $response->assertRedirect(route('vendor.subscription'));
+
+        $subscription->refresh();
+        $this->assertSame(SubscriptionStatus::Active, $subscription->status);
+        $this->assertTrue($vendor->fresh()->hasActiveSubscription());
+    }
+
+    public function test_opay_webhook_activates_subscription_with_valid_sha3_signature(): void
+    {
+        config(['services.opay.secret_key' => 'opay_test_secret']);
+
+        $vendor = $this->makeVendor();
+
+        VendorSubscription::create([
+            'vendor_id' => $vendor->id,
+            'gateway' => PaymentGateway::Opay,
+            'plan' => SubscriptionPlan::Monthly,
+            'amount' => 500000,
+            'status' => SubscriptionStatus::Pending,
+            'reference' => 'sub_ref_opay_3',
+        ]);
+
+        Http::fake([
+            'sandboxapi.opaycheckout.com/api/v1/international/cashier/status' => Http::response([
+                'code' => '00000',
+                'message' => 'SUCCESSFUL',
+                'data' => ['reference' => 'sub_ref_opay_3', 'status' => 'SUCCESS'],
+            ], 200),
+        ]);
+
+        $payloadInner = [
+            'amount' => '500000',
+            'currency' => 'NGN',
+            'reference' => 'sub_ref_opay_3',
+            'refunded' => false,
+            'status' => 'SUCCESS',
+            'timestamp' => '2026-07-12T11:46:26Z',
+            'token' => '211215140485151728',
+            'transactionId' => '211215140485151728',
+        ];
+
+        $signingString = sprintf(
+            '{Amount:"%s",Currency:"%s",Reference:"%s",Refunded:%s,Status:"%s",Timestamp:"%s",Token:"%s",TransactionID:"%s"}',
+            $payloadInner['amount'], $payloadInner['currency'], $payloadInner['reference'],
+            'f', $payloadInner['status'], $payloadInner['timestamp'], $payloadInner['token'], $payloadInner['transactionId'],
+        );
+
+        $body = json_encode([
+            'payload' => $payloadInner,
+            'sha512' => hash_hmac('sha3-512', $signingString, 'opay_test_secret'),
+            'type' => 'transaction-status',
+        ]);
+
+        $response = $this->call('POST', route('webhooks.opay'), [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], $body);
+
+        $response->assertOk();
+
+        $subscription = VendorSubscription::where('reference', 'sub_ref_opay_3')->firstOrFail();
+        $this->assertSame(SubscriptionStatus::Active, $subscription->status);
+    }
+
+    public function test_opay_webhook_rejects_invalid_signature(): void
+    {
+        config(['services.opay.secret_key' => 'opay_test_secret']);
+
+        $vendor = $this->makeVendor();
+
+        VendorSubscription::create([
+            'vendor_id' => $vendor->id,
+            'gateway' => PaymentGateway::Opay,
+            'plan' => SubscriptionPlan::Monthly,
+            'amount' => 500000,
+            'status' => SubscriptionStatus::Pending,
+            'reference' => 'sub_ref_opay_4',
+        ]);
+
+        $body = json_encode([
+            'payload' => ['amount' => '500000', 'currency' => 'NGN', 'reference' => 'sub_ref_opay_4', 'refunded' => false, 'status' => 'SUCCESS', 'timestamp' => 'now', 'token' => 'x', 'transactionId' => 'x'],
+            'sha512' => 'not-the-right-signature',
+            'type' => 'transaction-status',
+        ]);
+
+        $response = $this->call('POST', route('webhooks.opay'), [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], $body);
+
+        $response->assertStatus(401);
+
+        $this->assertSame(SubscriptionStatus::Pending, VendorSubscription::where('reference', 'sub_ref_opay_4')->firstOrFail()->status);
     }
 }

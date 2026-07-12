@@ -48,7 +48,7 @@ class ProductModerationTest extends TestCase
             'paid_at' => now(),
             'starts_at' => now(),
             'expires_at' => now()->addMonth(),
-            'paystack_reference' => 'moderation-test-ref',
+            'reference' => 'moderation-test-ref',
         ]);
 
         Livewire::actingAs($vendor->user)

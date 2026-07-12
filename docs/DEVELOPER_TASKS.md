@@ -24,16 +24,26 @@ desktop browser context only. It needs a human to actually test on real Android 
 hardware — iOS Safari in particular has known quirks with camera permissions and autoplay that
 don't show up until you test on a real device.
 
-**4. Vendor subscriptions are real code, but running on a Paystack test account.** Vendors must
-now pay (monthly or annual, `app/Livewire/Vendor/Subscription.php`) before posting/listing new
-products, enforced in `app/Livewire/Vendor/ProductManager.php`. The Paystack integration
-(`app/Services/PaystackClient.php`, `app/Services/SubscriptionService.php`) is fully wired —
-initialize transaction, verify transaction, webhook signature verification — and tested
-(`tests/Feature/VendorSubscriptionTest.php`). To go live: swap the test `PAYSTACK_SECRET_KEY` /
-`PAYSTACK_PUBLIC_KEY` in `.env` for live keys, and register the production webhook URL
-(`/webhooks/paystack`) in the Paystack dashboard under Settings > API Keys & Webhooks — it must be
-publicly reachable over HTTPS, which only exists once this is deployed somewhere other than
-localhost.
+**4. Vendor subscriptions are real code, but running on test/sandbox accounts.** Vendors must now
+pay (monthly or annual, `app/Livewire/Vendor/Subscription.php`) before posting/listing new
+products, enforced in `app/Livewire/Vendor/ProductManager.php`, and can pay with either **Paystack**
+or **OPay** (`App\Enums\PaymentGateway`). Both integrations are fully wired - initialize/create
+transaction, verify/query status, webhook signature verification - and tested
+(`tests/Feature/VendorSubscriptionTest.php`). To go live:
+
+- **Paystack**: swap the test `PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` in `.env` for live
+  keys, and register the production webhook URL (`/webhooks/paystack`) in the Paystack dashboard
+  under Settings > API Keys & Webhooks.
+- **OPay**: requires a verified OPay Business merchant account (business KYC, unlike Paystack's
+  instant test mode) before you even get sandbox keys - apply at business.opayweb.com. Once
+  approved, set `OPAY_MERCHANT_ID`, `OPAY_PUBLIC_KEY`, `OPAY_SECRET_KEY` in `.env` and flip
+  `OPAY_SANDBOX=false` when ready for live traffic. **Important caveat**: `App\Services\OpayClient`
+  was built directly from OPay's published API docs (doc.opaycheckout.com), but the unit for the
+  `amount.total` field (kobo vs whole naira) could not be confirmed without a live sandbox
+  account - verify a real test transaction charges the expected amount before trusting this in
+  production.
+- Both webhook URLs (`/webhooks/paystack`, `/webhooks/opay`) need to be publicly reachable over
+  HTTPS, which only exists once this is deployed somewhere other than localhost.
 
 ---
 
@@ -82,5 +92,6 @@ localhost.
 
 ---
 
-Run `php artisan test` after any change — 77 tests currently pass and cover the full order
-lifecycle, registration, product moderation, seller verification, and vendor subscription flows.
+Run `php artisan test` after any change — 81 tests currently pass and cover the full order
+lifecycle, registration, product moderation, seller verification, and vendor subscription
+(Paystack and OPay) flows.

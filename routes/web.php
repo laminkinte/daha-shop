@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\VendorDocumentController;
 use App\Http\Controllers\Vendor\SubscriptionCallbackController;
+use App\Http\Controllers\Webhooks\OpayWebhookController;
 use App\Http\Controllers\Webhooks\PaystackWebhookController;
 use App\Livewire\Admin\AgentManager;
 use App\Livewire\Admin\BlacklistManager;
@@ -56,6 +57,7 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 });
 
 Route::post('/webhooks/paystack', PaystackWebhookController::class)->name('webhooks.paystack');
+Route::post('/webhooks/opay', OpayWebhookController::class)->name('webhooks.opay');
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboard::class)->name('dashboard');

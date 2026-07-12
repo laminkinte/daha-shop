@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Vendor;
 
+use App\Enums\PaymentGateway;
 use App\Enums\SubscriptionPlan;
 use App\Services\SubscriptionService;
 use Illuminate\Support\Facades\Auth;
@@ -13,16 +14,19 @@ class Subscription extends Component
 {
     public string $selectedPlan = 'monthly';
 
+    public string $selectedGateway = 'paystack';
+
     public ?string $error = null;
 
     public function subscribe(SubscriptionService $subscriptions)
     {
         $vendor = Auth::user()->vendor;
         $plan = SubscriptionPlan::from($this->selectedPlan);
+        $gateway = PaymentGateway::from($this->selectedGateway);
         $this->error = null;
 
         try {
-            $url = $subscriptions->initialize($vendor, $plan, route('vendor.subscription.callback'));
+            $url = $subscriptions->initialize($vendor, $plan, $gateway, route('vendor.subscription.callback'));
         } catch (\Throwable $e) {
             report($e);
             $this->error = 'We could not start the payment right now. Please try again shortly.';

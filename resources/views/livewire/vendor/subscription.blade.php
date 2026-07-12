@@ -59,10 +59,24 @@
             </button>
         </div>
 
+        <div class="mb-6">
+            <p class="text-sm font-medium text-gray-700 mb-2">Pay with</p>
+            <div class="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+                <button type="button" wire:click="$set('selectedGateway', 'paystack')"
+                    class="px-4 py-1.5 text-sm font-medium rounded-md transition {{ $selectedGateway === 'paystack' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700' }}">
+                    Paystack
+                </button>
+                <button type="button" wire:click="$set('selectedGateway', 'opay')"
+                    class="px-4 py-1.5 text-sm font-medium rounded-md transition {{ $selectedGateway === 'opay' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700' }}">
+                    OPay
+                </button>
+            </div>
+        </div>
+
         <button wire:click="subscribe" wire:loading.attr="disabled"
             class="w-full sm:w-auto bg-green-700 hover:bg-green-800 text-white font-semibold px-6 py-3 rounded-lg disabled:opacity-60">
-            <span wire:loading.remove wire:target="subscribe">Pay with Paystack &rarr;</span>
-            <span wire:loading wire:target="subscribe">Redirecting to Paystack…</span>
+            <span wire:loading.remove wire:target="subscribe">Pay with {{ $selectedGateway === 'opay' ? 'OPay' : 'Paystack' }} &rarr;</span>
+            <span wire:loading wire:target="subscribe">Redirecting…</span>
         </button>
     </div>
 
@@ -84,6 +98,7 @@
                 <div class="px-5 py-3.5 flex items-center justify-between text-sm">
                     <div>
                         <span class="font-medium text-gray-900">{{ $subscription->plan->label() }}</span>
+                        <span class="text-gray-400 ml-2">via {{ $subscription->gateway->label() }}</span>
                         <span class="text-gray-400 ml-2">{{ $subscription->created_at->format('d M Y, g:ia') }}</span>
                     </div>
                     <div class="flex items-center gap-3">
