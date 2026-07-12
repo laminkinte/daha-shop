@@ -20,6 +20,8 @@ class ProductManager extends Component
 
     public bool $showForm = false;
 
+    public bool $subscriptionRequired = false;
+
     public ?int $editingId = null;
 
     public ?ProductStatus $editingStatus = null;
@@ -40,6 +42,13 @@ class ProductManager extends Component
 
     public function create(): void
     {
+        if (! Auth::user()->vendor->hasActiveSubscription()) {
+            $this->subscriptionRequired = true;
+
+            return;
+        }
+
+        $this->subscriptionRequired = false;
         $this->resetForm();
         $this->showForm = true;
     }
@@ -87,6 +96,13 @@ class ProductManager extends Component
 
     private function persist(?ProductStatus $status): void
     {
+        if (! $this->editingId && ! Auth::user()->vendor->hasActiveSubscription()) {
+            $this->subscriptionRequired = true;
+            $this->showForm = false;
+
+            return;
+        }
+
         $this->validate([
             'categoryId' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',

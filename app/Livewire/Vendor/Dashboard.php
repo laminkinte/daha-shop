@@ -27,6 +27,7 @@ class Dashboard extends Component
             'vendor' => $vendor,
             'stats' => $stats,
             'recentOrders' => $recentOrders,
+            'hasActiveSubscription' => $vendor->hasActiveSubscription(),
         ]);
     }
 }

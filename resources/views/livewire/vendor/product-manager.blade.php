@@ -1,4 +1,11 @@
 <div>
+    @if ($subscriptionRequired)
+        <div class="mb-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 text-sm flex items-center justify-between gap-3">
+            <span>You need an active subscription before you can post or list new products.</span>
+            <a href="{{ route('vendor.subscription') }}" wire:navigate class="shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md">Subscribe now</a>
+        </div>
+    @endif
+
     <div class="flex items-center justify-between mb-4">
         <div></div>
         <button wire:click="create" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-md">

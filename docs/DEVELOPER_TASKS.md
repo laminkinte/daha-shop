@@ -24,6 +24,17 @@ desktop browser context only. It needs a human to actually test on real Android 
 hardware — iOS Safari in particular has known quirks with camera permissions and autoplay that
 don't show up until you test on a real device.
 
+**4. Vendor subscriptions are real code, but running on a Paystack test account.** Vendors must
+now pay (monthly or annual, `app/Livewire/Vendor/Subscription.php`) before posting/listing new
+products, enforced in `app/Livewire/Vendor/ProductManager.php`. The Paystack integration
+(`app/Services/PaystackClient.php`, `app/Services/SubscriptionService.php`) is fully wired —
+initialize transaction, verify transaction, webhook signature verification — and tested
+(`tests/Feature/VendorSubscriptionTest.php`). To go live: swap the test `PAYSTACK_SECRET_KEY` /
+`PAYSTACK_PUBLIC_KEY` in `.env` for live keys, and register the production webhook URL
+(`/webhooks/paystack`) in the Paystack dashboard under Settings > API Keys & Webhooks — it must be
+publicly reachable over HTTPS, which only exists once this is deployed somewhere other than
+localhost.
+
 ---
 
 ## Tier 2 — Explicitly deferred from the original build, still deferred
@@ -42,8 +53,11 @@ don't show up until you test on a real device.
 
 ## Tier 3 — Business ideas discussed, not yet built
 
-- **Vendor subscription tiers** tied to delivery service level (faster dispatch/payout for paid
-  tiers) — discussed as the recommended monetization model, not implemented.
+- **Delivery-speed perks tied to subscription plan.** Vendor subscriptions exist now (see Tier 1,
+  item 4), but they're flat pay-to-post gates — the original idea of faster dispatch/payout for
+  higher tiers isn't built. Would need a tier concept beyond monthly/annual and changes to
+  `App\Services\DeliveryFeeCalculator` / dispatch assignment logic to actually prioritize paid
+  vendors.
 - **Real biometric face-matching** (Smile Identity / AWS Rekognition / similar) to replace the
   current manual admin side-by-side photo comparison in Admin → Vendors. Needs a paid account;
   the capture/storage layer is already built to slot this in later.
@@ -68,5 +82,5 @@ don't show up until you test on a real device.
 
 ---
 
-Run `php artisan test` after any change — 57 tests currently pass and cover the full order
-lifecycle, registration, product moderation, and seller verification flows.
+Run `php artisan test` after any change — 77 tests currently pass and cover the full order
+lifecycle, registration, product moderation, seller verification, and vendor subscription flows.

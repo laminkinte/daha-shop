@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\VendorDocumentController;
+use App\Http\Controllers\Vendor\SubscriptionCallbackController;
+use App\Http\Controllers\Webhooks\PaystackWebhookController;
 use App\Livewire\Admin\AgentManager;
 use App\Livewire\Admin\BlacklistManager;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
@@ -27,6 +29,7 @@ use App\Livewire\Vendor\OrderManager as VendorOrderManager;
 use App\Livewire\Vendor\PayoutHistory;
 use App\Livewire\Vendor\ProductManager;
 use App\Livewire\Vendor\QrCode as VendorQrCode;
+use App\Livewire\Vendor\Subscription as VendorSubscription;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ProductCatalog::class)->name('storefront.home');
@@ -48,7 +51,11 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
     Route::get('/orders', VendorOrderManager::class)->name('orders');
     Route::get('/payouts', PayoutHistory::class)->name('payouts');
     Route::get('/qr-code', VendorQrCode::class)->name('qr-code');
+    Route::get('/subscription', VendorSubscription::class)->name('subscription');
+    Route::get('/subscription/callback', SubscriptionCallbackController::class)->name('subscription.callback');
 });
+
+Route::post('/webhooks/paystack', PaystackWebhookController::class)->name('webhooks.paystack');
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboard::class)->name('dashboard');

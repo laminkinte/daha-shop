@@ -46,6 +46,10 @@
                             <x-slot:icon><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5A.75.75 0 014.5 3.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5zM3.75 14.25a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5zM13.5 4.5a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5zM13.5 13.5h2.25v2.25H13.5V13.5zM18 13.5h.75v.75H18v-.75zM13.5 18h.75v.75h-.75V18zM18 18h.75v.75H18V18z" /></svg></x-slot:icon>
                             Shop QR Code
                         </x-dashboard-nav-link>
+                        <x-dashboard-nav-link :href="route('vendor.subscription')" :active="request()->routeIs('vendor.subscription')">
+                            <x-slot:icon><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3M3.75 4.5h16.5a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5V6a1.5 1.5 0 011.5-1.5z" /></svg></x-slot:icon>
+                            Subscription
+                        </x-dashboard-nav-link>
                     @elseif(auth()->user()->isAdmin())
                         <p class="px-3 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Overview</p>
                         <x-dashboard-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">

@@ -9,9 +9,12 @@ use App\Livewire\Storefront\ProductCatalog;
 use App\Livewire\Storefront\ProductDetail;
 use App\Livewire\Vendor\ProductManager;
 use App\Models\Category;
+use App\Enums\SubscriptionPlan;
+use App\Enums\SubscriptionStatus;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Models\VendorSubscription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -36,6 +39,17 @@ class ProductModerationTest extends TestCase
     {
         $vendor = $this->makeVendor();
         $category = Category::create(['name' => 'Phones', 'slug' => 'phones']);
+
+        VendorSubscription::create([
+            'vendor_id' => $vendor->id,
+            'plan' => SubscriptionPlan::Monthly,
+            'amount' => 500000,
+            'status' => SubscriptionStatus::Active,
+            'paid_at' => now(),
+            'starts_at' => now(),
+            'expires_at' => now()->addMonth(),
+            'paystack_reference' => 'moderation-test-ref',
+        ]);
 
         Livewire::actingAs($vendor->user)
             ->test(ProductManager::class)

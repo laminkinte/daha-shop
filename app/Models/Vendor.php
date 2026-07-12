@@ -59,6 +59,25 @@ class Vendor extends Model
         return $this->hasMany(DeliveryFee::class);
     }
 
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(VendorSubscription::class);
+    }
+
+    public function activeSubscription(): ?VendorSubscription
+    {
+        return $this->subscriptions()
+            ->where('status', \App\Enums\SubscriptionStatus::Active)
+            ->where('expires_at', '>', now())
+            ->latest('expires_at')
+            ->first();
+    }
+
+    public function hasActiveSubscription(): bool
+    {
+        return $this->activeSubscription() !== null;
+    }
+
     public function isApproved(): bool
     {
         return $this->status === VendorStatus::Approved;
