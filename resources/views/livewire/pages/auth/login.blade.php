@@ -53,45 +53,31 @@ new #[Layout('layouts.guest')] class extends Component
             <x-input-error :messages="$errors->get('form.password')" class="mt-2" />
         </div>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
+        <!-- Remember Me + forgot links -->
+        <div class="flex items-center justify-between mt-4">
             <label for="remember" class="inline-flex items-center">
                 <input wire:model="form.remember" id="remember" type="checkbox" class="rounded border-gray-300 text-green-600 shadow-sm focus:ring-green-500" name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
+                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
             </label>
-        </div>
 
-       <div class="mt-4 flex items-center justify-between">
-            <div class="flex flex-col gap-1">
-                <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    Need help signing in?
-                </span>
-
+            <div class="flex flex-col items-end gap-0.5 text-right">
                 @if (Route::has('password.request'))
-                    <a
-                        href="{{ route('password.request') }}"
-                        wire:navigate
-                        class="text-sm font-medium text-gray-600 hover:text-green-700 hover:underline transition duration-200"
-                    >
-                        Forgot your password?
+                    <a href="{{ route('password.request') }}" wire:navigate class="text-xs font-medium text-gray-500 hover:text-green-700 hover:underline transition-colors">
+                        Forgot password?
                     </a>
                 @endif
 
                 @if (Route::has('pin.request'))
-                    <a
-                        href="{{ route('pin.request') }}"
-                        wire:navigate
-                        class="text-sm font-medium text-gray-600 hover:text-green-700 hover:underline transition duration-200"
-                    >
+                    <a href="{{ route('pin.request') }}" wire:navigate class="text-xs font-medium text-gray-500 hover:text-green-700 hover:underline transition-colors">
                         Forgot PIN?
                     </a>
                 @endif
             </div>
-
-            <x-primary-button class="ms-4">
-                {{ __('Log in') }}
-            </x-primary-button>
         </div>
+
+        <x-primary-button class="w-full mt-6" wire:loading.attr="disabled" wire:target="login">
+            {{ __('Log in') }}
+        </x-primary-button>
     </form>
 
     <p class="mt-6 text-sm text-gray-600 text-center">

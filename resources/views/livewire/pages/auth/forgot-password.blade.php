@@ -37,8 +37,11 @@ new #[Layout('layouts.guest')] class extends Component
 }; ?>
 
 <div>
-    <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-        {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-gray-900">Reset your password</h1>
+        <p class="text-sm text-gray-500 mt-1">
+            {{ __('Enter your email address and we\'ll send you a link to choose a new password.') }}
+        </p>
     </div>
 
     <!-- Session Status -->
@@ -52,10 +55,14 @@ new #[Layout('layouts.guest')] class extends Component
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
-                {{ __('Email Password Reset Link') }}
-            </x-primary-button>
-        </div>
+        <x-primary-button class="w-full mt-6" wire:loading.attr="disabled" wire:target="sendPasswordResetLink">
+            {{ __('Email Password Reset Link') }}
+        </x-primary-button>
     </form>
+
+    <p class="mt-6 text-sm text-gray-600 text-center">
+        <a href="{{ route('login') }}" wire:navigate class="font-semibold text-green-700 hover:text-green-800 underline">
+            &larr; Back to login
+        </a>
+    </p>
 </div>

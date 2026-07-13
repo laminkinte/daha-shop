@@ -13,7 +13,7 @@ new #[Layout('layouts.guest')] class extends Component
     public string $pin = '';
     public string $pin_confirmation = '';
 
-public bool $otpSent = false;
+    public bool $otpSent = false;
 
     public function sendOtp(OtpService $otpService): void
     {
@@ -33,9 +33,8 @@ public bool $otpSent = false;
 
         $otpService->generate($this->phone, 'pin_reset');
 
-       session()->flash('status', 'A verification code has been sent to your phone.');
-            $this->otpSent = true;
-
+        session()->flash('status', 'A verification code has been sent to your phone.');
+        $this->otpSent = true;
     }
 
     public function resetPin(OtpService $otpService): void
@@ -66,8 +65,11 @@ public bool $otpSent = false;
 ?>
 
 <div>
-    <div class="mb-4 text-sm text-gray-600">
-        Enter your phone number and we'll send you a verification code to reset your PIN.
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-gray-900">Reset your PIN</h1>
+        <p class="text-sm text-gray-500 mt-1">
+            Enter your phone number and we'll send you a verification code to reset your PIN.
+        </p>
     </div>
 
     <x-auth-session-status class="mb-4" :status="session('status')" />
@@ -84,68 +86,75 @@ public bool $otpSent = false;
                 type="text"
                 required
                 autofocus
+                :disabled="$otpSent"
             />
 
             <x-input-error :messages="$errors->get('phone')" class="mt-2" />
         </div>
 
-            @if (! $otpSent)
+        @if (! $otpSent)
 
-                <div class="mt-6">
-                    <x-primary-button>
-                        Send Verification Code
-                    </x-primary-button>
-                </div>
+            <x-primary-button class="w-full mt-6" wire:loading.attr="disabled" wire:target="sendOtp">
+                Send Verification Code
+            </x-primary-button>
 
-            @else
+        @else
 
-                <div class="mt-6">
-                    <x-input-label for="code" :value="__('Verification Code')" />
+            <div class="mt-4">
+                <x-input-label for="code" :value="__('Verification Code')" />
 
-                    <x-text-input
-                        id="code"
-                        wire:model="code"
-                        class="block mt-1 w-full"
-                        type="text"
-                        maxlength="6"
-                    />
+                <x-text-input
+                    id="code"
+                    wire:model="code"
+                    class="block mt-1 w-full text-center tracking-[0.5em]"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="6"
+                    autofocus
+                />
 
-                    <x-input-error :messages="$errors->get('code')" class="mt-2" />
-                </div>
+                <x-input-error :messages="$errors->get('code')" class="mt-2" />
+            </div>
 
-                <div class="mt-4">
-                    <x-input-label for="pin" :value="__('New PIN')" />
+            <div class="mt-4">
+                <x-input-label for="pin" :value="__('New PIN')" />
 
-                    <x-text-input
-                        id="pin"
-                        wire:model="pin"
-                        class="block mt-1 w-full"
-                        type="password"
-                        maxlength="4"
-                    />
+                <x-text-input
+                    id="pin"
+                    wire:model="pin"
+                    class="block mt-1 w-full text-center tracking-[0.5em]"
+                    type="password"
+                    inputmode="numeric"
+                    maxlength="4"
+                />
 
-                    <x-input-error :messages="$errors->get('pin')" class="mt-2" />
-                </div>
+                <x-input-error :messages="$errors->get('pin')" class="mt-2" />
+            </div>
 
-                <div class="mt-4">
-                    <x-input-label for="pin_confirmation" :value="__('Confirm PIN')" />
+            <div class="mt-4">
+                <x-input-label for="pin_confirmation" :value="__('Confirm PIN')" />
 
-                    <x-text-input
-                        id="pin_confirmation"
-                        wire:model="pin_confirmation"
-                        class="block mt-1 w-full"
-                        type="password"
-                        maxlength="4"
-                    />
-                </div>
+                <x-text-input
+                    id="pin_confirmation"
+                    wire:model="pin_confirmation"
+                    class="block mt-1 w-full text-center tracking-[0.5em]"
+                    type="password"
+                    inputmode="numeric"
+                    maxlength="4"
+                />
+            </div>
 
-                <div class="mt-6">
-                    <x-primary-button>
-                        Reset PIN
-                    </x-primary-button>
-                </div>
+            <x-primary-button class="w-full mt-6" wire:loading.attr="disabled" wire:target="resetPin">
+                Reset PIN
+            </x-primary-button>
 
-            @endif
+        @endif
 
     </form>
+
+    <p class="mt-6 text-sm text-gray-600 text-center">
+        <a href="{{ route('login') }}" wire:navigate class="font-semibold text-green-700 hover:text-green-800 underline">
+            &larr; Back to login
+        </a>
+    </p>
 </div>

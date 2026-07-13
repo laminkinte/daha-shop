@@ -259,7 +259,7 @@ new #[Layout('layouts.guest')] class extends Component
                 <x-input-label for="business_address" :value="__('Business Address')" />
                 <textarea
                     wire:model="business_address"
-                    class="block mt-1 w-full rounded-md border-gray-300 shadow-sm"
+                    class="block mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                     rows="3"></textarea>
                 <x-input-error :messages="$errors->get('business_address')" class="mt-2" />
             </div>
@@ -273,7 +273,7 @@ new #[Layout('layouts.guest')] class extends Component
 
             <div class="mt-4">
                 <x-input-label :value="__('ID Document Type')" />
-                <select wire:model="idDocumentType" class="mt-1 w-full rounded-md border-gray-300 focus:border-green-500 focus:ring-green-500">
+                <select wire:model="idDocumentType" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
                     <option value="national_id">National ID Card</option>
                     <option value="passport">International Passport</option>
                 </select>
@@ -357,11 +357,12 @@ new #[Layout('layouts.guest')] class extends Component
 
         <div class="mt-6">
 
-            <x-primary-button>
-                Register
+            <x-primary-button class="w-full" wire:loading.attr="disabled" wire:target="register">
+                <span wire:loading.remove wire:target="register">Register</span>
+                <span wire:loading wire:target="register">Creating your account&hellip;</span>
             </x-primary-button>
 
-            <p class="mt-4 text-sm text-gray-600">
+            <p class="mt-4 text-sm text-gray-600 text-center">
                 Already have an account?
                 <a
                     href="{{ route('login') }}"
