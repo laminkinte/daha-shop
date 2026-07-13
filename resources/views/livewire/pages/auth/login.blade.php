@@ -43,7 +43,7 @@ new #[Layout('layouts.guest')] class extends Component
 
         <!-- Password -->
         <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+            <x-input-label for="password" :value="__('Password / PIN')" />
 
             <x-text-input wire:model="form.password" id="password" class="block mt-1 w-full"
                             type="password"
@@ -61,14 +61,34 @@ new #[Layout('layouts.guest')] class extends Component
             </label>
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}" wire:navigate>
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
+       <div class="mt-4 flex items-center justify-between">
+            <div class="flex flex-col gap-1">
+                <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    Need help signing in?
+                </span>
 
-            <x-primary-button class="ms-3">
+                @if (Route::has('password.request'))
+                    <a
+                        href="{{ route('password.request') }}"
+                        wire:navigate
+                        class="text-sm font-medium text-gray-600 hover:text-green-700 hover:underline transition duration-200"
+                    >
+                        Forgot your password?
+                    </a>
+                @endif
+
+                @if (Route::has('pin.request'))
+                    <a
+                        href="{{ route('pin.request') }}"
+                        wire:navigate
+                        class="text-sm font-medium text-gray-600 hover:text-green-700 hover:underline transition duration-200"
+                    >
+                        Forgot PIN?
+                    </a>
+                @endif
+            </div>
+
+            <x-primary-button class="ms-4">
                 {{ __('Log in') }}
             </x-primary-button>
         </div>
