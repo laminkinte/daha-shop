@@ -114,19 +114,22 @@
             </div>
 
             <div class="border-t mt-4 pt-4 space-y-1 text-sm">
-                <div class="flex justify-between text-gray-600">
-                    <span>Items Subtotal</span><span>{{ naira($this->feePreview['itemsSubtotal']) }}</span>
+                <div class="flex justify-between font-bold text-gray-900 text-base">
+                    <span>Pay Cash on Delivery</span><span>{{ naira($this->feePreview['itemsSubtotal']) }}</span>
                 </div>
-                <div class="flex justify-between text-gray-600">
-                    <span>Delivery Fees</span><span>{{ naira($this->feePreview['deliveryTotal']) }}</span>
-                </div>
-                <div class="flex justify-between font-bold text-gray-900 text-base pt-2">
-                    <span>Total (Cash on Delivery)</span><span>{{ naira($this->feePreview['grandTotal']) }}</span>
-                </div>
+                @if ($this->feePreview['deliveryTotal'] > 0)
+                    <div class="flex justify-between text-gray-600 pt-1">
+                        <span>Pay Now via OPay (delivery fee)</span><span>{{ naira($this->feePreview['deliveryTotal']) }}</span>
+                    </div>
+                @endif
             </div>
 
+            @if ($this->feePreview['deliveryTotal'] > 0)
+                <p class="mt-3 text-xs text-gray-400">You'll pay the delivery fee online via OPay on the next step, before your order is confirmed. Items stay cash on delivery, as usual.</p>
+            @endif
+
             <button wire:click="placeOrder" wire:loading.attr="disabled" class="mt-6 w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60">
-                Place Order &mdash; Pay on Delivery
+                Place Order
             </button>
         </div>
     </div>

@@ -4,7 +4,10 @@
         <div class="text-sm text-gray-600 space-y-1">
             <div><span class="text-gray-400">Deliver to:</span> {{ $vendorOrder->order->address->street_address }}, {{ $vendorOrder->order->address->area }}</div>
             <div><span class="text-gray-400">Customer phone:</span> {{ $vendorOrder->order->address->phone }}</div>
-            <div><span class="text-gray-400">Expected COD amount:</span> <span class="font-bold text-green-700">{{ naira($vendorOrder->codTotal()) }}</span></div>
+            <div><span class="text-gray-400">Expected cash to collect:</span> <span class="font-bold text-green-700">{{ naira($vendorOrder->cashDueAtDelivery()) }}</span></div>
+            @if ($vendorOrder->delivery_fee > 0)
+                <div class="text-xs text-gray-400">Delivery fee of {{ naira($vendorOrder->delivery_fee) }} was already paid online via OPay &mdash; don't collect it again.</div>
+            @endif
         </div>
     </div>
 

@@ -11,6 +11,10 @@ class OrderService
 {
     public function confirmFromOtp(Order $order): void
     {
+        if (! $order->deliveryFeePaid()) {
+            return;
+        }
+
         if ($order->cod_amount_expected > config('markethub.max_cod_auto_confirm_amount')) {
             $order->update(['confirmation_status' => ConfirmationStatus::PendingAdminReview]);
 

@@ -45,6 +45,15 @@ transaction, verify/query status, webhook signature verification - and tested
 - Both webhook URLs (`/webhooks/paystack`, `/webhooks/opay`) need to be publicly reachable over
   HTTPS, which only exists once this is deployed somewhere other than localhost.
 
+**5. Delivery fees are prepaid via OPay - same sandbox-account caveat as item 4.** Customers now
+pay the delivery-fee portion of an order online via OPay (`app/Services/DeliveryFeePaymentService.php`)
+before the order can be OTP-confirmed - only the items themselves stay cash on delivery
+(`Order::deliveryFeePaid()`, enforced in `App\Services\OrderService::confirmFromOtp()`). Reuses the
+same `App\Services\OpayClient` as vendor subscriptions, and the same production requirements apply:
+a verified OPay Business merchant account, and re-verifying the `amount.total` unit against a real
+sandbox transaction before trusting it live. Orders with no delivery fee due (all-pickup orders)
+skip this step entirely and confirm immediately, same as before this feature existed.
+
 ---
 
 ## Tier 2 — Explicitly deferred from the original build, still deferred
@@ -92,6 +101,6 @@ transaction, verify/query status, webhook signature verification - and tested
 
 ---
 
-Run `php artisan test` after any change — 81 tests currently pass and cover the full order
-lifecycle, registration, product moderation, seller verification, and vendor subscription
-(Paystack and OPay) flows.
+Run `php artisan test` after any change — 90 tests currently pass and cover the full order
+lifecycle, registration, product moderation, seller verification, vendor subscription (Paystack
+and OPay), pickup fulfillment, and prepaid delivery-fee flows.

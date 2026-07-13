@@ -44,7 +44,7 @@ class OrderManager extends Component
         $vendorOrder = $this->authorizedOrder($vendorOrderId);
         $cash = (int) round(((float) ($this->pickupCash[$vendorOrderId] ?? 0)) * 100);
 
-        $service->markPickedUp($vendorOrder, $cash > 0 ? $cash : $vendorOrder->codTotal());
+        $service->markPickedUp($vendorOrder, $cash > 0 ? $cash : $vendorOrder->cashDueAtDelivery());
     }
 
     private function authorizedOrder(int $vendorOrderId): VendorOrder

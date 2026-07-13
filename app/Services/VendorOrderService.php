@@ -73,7 +73,7 @@ class VendorOrderService
             'proof_of_delivery_path' => $proofOfDeliveryPath,
         ]);
 
-        $expected = $vendorOrder->codTotal();
+        $expected = $vendorOrder->cashDueAtDelivery();
 
         $reconciliation = CashReconciliation::create([
             'delivery_agent_id' => $vendorOrder->delivery_agent_id,

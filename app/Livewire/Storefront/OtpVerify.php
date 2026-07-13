@@ -3,6 +3,7 @@
 namespace App\Livewire\Storefront;
 
 use App\Models\Order;
+use App\Services\DeliveryFeePaymentService;
 use App\Services\OrderService;
 use App\Services\OtpService;
 use Livewire\Attributes\Layout;
@@ -25,6 +26,16 @@ class OtpVerify extends Component
         $this->order = $order;
     }
 
+    public function payDeliveryFee(DeliveryFeePaymentService $deliveryFeePayments)
+    {
+        $url = $deliveryFeePayments->initialize(
+            $this->order,
+            route('storefront.orders.delivery-fee.callback', $this->order->order_number),
+        );
+
+        return $this->redirect($url, navigate: false);
+    }
+
     public function resend(OtpService $otpService): void
     {
         $otpService->generate($this->order->address->phone, 'order_confirmation');
@@ -34,6 +45,12 @@ class OtpVerify extends Component
 
     public function verify(OtpService $otpService, OrderService $orderService)
     {
+        if (! $this->order->deliveryFeePaid()) {
+            $this->message = 'Please pay the delivery fee first.';
+
+            return;
+        }
+
         $ok = $otpService->verify($this->order->address->phone, 'order_confirmation', $this->code);
 
         if (! $ok) {

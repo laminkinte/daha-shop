@@ -12,7 +12,7 @@ class Order extends Model
 {
     protected $fillable = [
         'order_number', 'user_id', 'address_id', 'status', 'confirmation_status',
-        'items_subtotal', 'delivery_fee_total', 'cod_amount_expected', 'cod_amount_collected',
+        'items_subtotal', 'delivery_fee_total', 'delivery_fee_paid_at', 'cod_amount_expected', 'cod_amount_collected',
         'delivery_attempts', 'confirmed_at', 'cancelled_at', 'cancellation_reason',
     ];
 
@@ -23,6 +23,7 @@ class Order extends Model
             'confirmation_status' => ConfirmationStatus::class,
             'confirmed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'delivery_fee_paid_at' => 'datetime',
         ];
     }
 
@@ -39,6 +40,20 @@ class Order extends Model
     public function vendorOrders(): HasMany
     {
         return $this->hasMany(VendorOrder::class);
+    }
+
+    public function deliveryFeePayments(): HasMany
+    {
+        return $this->hasMany(DeliveryFeePayment::class);
+    }
+
+    /**
+     * Delivery fees are prepaid via OPay, not collected as cash - an order
+     * with no delivery fee due (e.g. all pickup) needs no payment at all.
+     */
+    public function deliveryFeePaid(): bool
+    {
+        return $this->delivery_fee_total === 0 || $this->delivery_fee_paid_at !== null;
     }
 
     public function isFullyResolved(): bool

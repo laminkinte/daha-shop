@@ -67,6 +67,15 @@ class VendorOrder extends Model
         return $this->items_subtotal + $this->delivery_fee;
     }
 
+    /**
+     * The delivery fee is prepaid via OPay, so the cash an agent or vendor
+     * should actually collect at delivery/pickup only ever covers the items.
+     */
+    public function cashDueAtDelivery(): int
+    {
+        return $this->items_subtotal;
+    }
+
     public function isPickup(): bool
     {
         return $this->fulfillment_method === FulfillmentMethod::Pickup;

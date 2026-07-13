@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\VendorDocumentController;
+use App\Http\Controllers\Storefront\DeliveryFeeCallbackController;
 use App\Http\Controllers\Vendor\SubscriptionCallbackController;
 use App\Http\Controllers\Webhooks\OpayWebhookController;
 use App\Http\Controllers\Webhooks\PaystackWebhookController;
@@ -43,6 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/wishlist', Wishlist::class)->name('storefront.wishlist');
     Route::get('/orders', OrderHistory::class)->name('storefront.orders');
     Route::get('/orders/{order}/confirm', OtpVerify::class)->name('storefront.orders.confirm');
+    Route::get('/orders/{order}/delivery-fee/callback', DeliveryFeeCallbackController::class)->name('storefront.orders.delivery-fee.callback');
     Route::get('/orders/{order}', OrderTracking::class)->name('storefront.orders.show');
 });
 

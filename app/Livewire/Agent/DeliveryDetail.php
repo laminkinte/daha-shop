@@ -28,7 +28,7 @@ class DeliveryDetail extends Component
     public function mount(int $vendorOrderId): void
     {
         $this->vendorOrder = Auth::user()->deliveryAgent->vendorOrders()->with('order.address', 'vendor', 'items')->findOrFail($vendorOrderId);
-        $this->cashCollected = number_format($this->vendorOrder->codTotal() / 100, 2, '.', '');
+        $this->cashCollected = number_format($this->vendorOrder->cashDueAtDelivery() / 100, 2, '.', '');
     }
 
     public function markDelivered(VendorOrderService $service)

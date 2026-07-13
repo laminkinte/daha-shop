@@ -123,6 +123,22 @@ class StorefrontLivewireTest extends TestCase
             ->call('verify')
             ->assertSet('message', fn ($message) => ! empty($message));
 
+        // Delivery fee must be paid via OPay before the order can be confirmed.
+        \Illuminate\Support\Facades\Http::fake([
+            'sandboxapi.opaycheckout.com/api/v1/international/cashier/status' => \Illuminate\Support\Facades\Http::response([
+                'code' => '00000',
+                'data' => ['status' => 'SUCCESS'],
+            ], 200),
+        ]);
+
+        \App\Models\DeliveryFeePayment::create([
+            'order_id' => $order->id,
+            'reference' => 'delfee_test_ref',
+            'amount' => $order->delivery_fee_total,
+            'status' => \App\Enums\DeliveryFeePaymentStatus::Pending,
+        ]);
+        app(\App\Services\DeliveryFeePaymentService::class)->verifyAndActivate('delfee_test_ref');
+
         Livewire::actingAs($customer)
             ->test(OtpVerify::class, ['order' => $order])
             ->set('code', $capturedCode)

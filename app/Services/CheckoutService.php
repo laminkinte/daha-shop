@@ -92,10 +92,13 @@ class CheckoutService
                 $deliveryFeeTotal += $deliveryFee;
             }
 
+            // The delivery fee is prepaid via OPay, not collected as cash, so
+            // cod_amount_expected - the cash the agent should collect - only
+            // ever covers the items themselves.
             $order->update([
                 'items_subtotal' => $itemsSubtotal,
                 'delivery_fee_total' => $deliveryFeeTotal,
-                'cod_amount_expected' => $itemsSubtotal + $deliveryFeeTotal,
+                'cod_amount_expected' => $itemsSubtotal,
             ]);
 
             $cart->items()->delete();

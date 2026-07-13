@@ -22,6 +22,7 @@ use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\DeliveryAgent;
 use App\Models\DeliveryFee;
+use App\Models\DeliveryFeePayment;
 use App\Models\DeliveryZone;
 use App\Models\Order;
 use App\Models\Product;
@@ -32,6 +33,7 @@ use App\Models\VendorPayout;
 use Database\Seeders\NigeriaGeographySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -112,7 +114,32 @@ class FullMarketplaceJourneyTest extends TestCase
             return true;
         });
 
-        // 2. Customer confirms via the real OtpVerify component.
+        // 2. Customer pays the delivery fee via OPay (real OtpVerify + callback route).
+        Http::fake([
+            'sandboxapi.opaycheckout.com/api/v1/international/cashier/create' => Http::response([
+                'code' => '00000',
+                'data' => ['reference' => 'delfee_journey_1', 'cashierUrl' => 'https://sandboxcashier.opaycheckout.com/checkout/journey1', 'status' => 'INITIAL'],
+            ], 200),
+            'sandboxapi.opaycheckout.com/api/v1/international/cashier/status' => Http::response([
+                'code' => '00000',
+                'data' => ['status' => 'SUCCESS'],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($customer)
+            ->test(OtpVerify::class, ['order' => $order])
+            ->call('payDeliveryFee')
+            ->assertRedirect('https://sandboxcashier.opaycheckout.com/checkout/journey1');
+
+        $reference = DeliveryFeePayment::where('order_id', $order->id)->firstOrFail()->reference;
+
+        $this->actingAs($customer)
+            ->get(route('storefront.orders.delivery-fee.callback', ['order' => $order->order_number, 'reference' => $reference]))
+            ->assertRedirect(route('storefront.orders.confirm', $order->order_number));
+
+        $this->assertTrue($order->fresh()->deliveryFeePaid());
+
+        // 3. Customer confirms via the real OtpVerify component.
         Livewire::actingAs($customer)
             ->test(OtpVerify::class, ['order' => $order])
             ->set('code', $code)
@@ -154,7 +181,7 @@ class FullMarketplaceJourneyTest extends TestCase
         // 6. Agent completes delivery + collects cash via the real DeliveryDetail component.
         Livewire::actingAs($agentUser)
             ->test(DeliveryDetail::class, ['vendorOrderId' => $vendorOrder->id])
-            ->set('cashCollected', number_format($vendorOrder->codTotal() / 100, 2, '.', ''))
+            ->set('cashCollected', number_format($vendorOrder->cashDueAtDelivery() / 100, 2, '.', ''))
             ->set('denominationNotes', 'Paid exact change')
             ->call('markDelivered')
             ->assertRedirect(route('agent.deliveries'));

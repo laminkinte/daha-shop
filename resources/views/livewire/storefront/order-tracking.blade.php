@@ -15,7 +15,7 @@
                 <div class="font-semibold capitalize">{{ str_replace('_', ' ', $order->confirmation_status->value) }}</div>
             </div>
             <div>
-                <div class="text-gray-400">COD Total</div>
+                <div class="text-gray-400">Cash on Delivery</div>
                 <div class="font-semibold">{{ naira($order->cod_amount_expected) }}</div>
             </div>
             <div>
@@ -23,6 +23,17 @@
                 <div class="font-semibold">{{ $order->address->area }}, {{ $order->address->lga->name }}</div>
             </div>
         </div>
+
+        @if ($order->delivery_fee_total > 0)
+            <div class="mt-4 pt-4 border-t border-gray-100 text-sm flex items-center gap-2">
+                <span class="text-gray-400">Delivery Fee ({{ naira($order->delivery_fee_total) }}):</span>
+                @if ($order->deliveryFeePaid())
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Paid via OPay</span>
+                @else
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">Payment pending</span>
+                @endif
+            </div>
+        @endif
     </div>
 
     @php
@@ -108,7 +119,7 @@
                 @endforeach
 
                 <div class="flex justify-between text-sm pt-2 border-t border-gray-100 font-semibold">
-                    <span>{{ $vendorOrder->isPickup() ? 'Delivery Fee (pickup - none)' : 'Delivery Fee' }}</span><span>{{ naira($vendorOrder->delivery_fee) }}</span>
+                    <span>{{ $vendorOrder->isPickup() ? 'Delivery Fee (pickup - none)' : 'Delivery Fee (paid via OPay)' }}</span><span>{{ naira($vendorOrder->delivery_fee) }}</span>
                 </div>
             </div>
         </div>

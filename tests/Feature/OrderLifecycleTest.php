@@ -97,7 +97,8 @@ class OrderLifecycleTest extends TestCase
 
         $order = app(CheckoutService::class)->placeOrder($customer, $cart->fresh('items'), $address);
 
-        $this->assertSame(10000000 + 150000, $order->cod_amount_expected);
+        $this->assertSame(10000000, $order->cod_amount_expected);
+        $this->assertSame(150000, $order->delivery_fee_total);
         $this->assertCount(1, $order->vendorOrders);
         $this->assertSame(8, $product->fresh()->stock);
         $this->assertTrue($cart->fresh()->items->isEmpty());
@@ -109,6 +110,25 @@ class OrderLifecycleTest extends TestCase
             return $job->phone === $address->phone;
         });
         $this->assertNotNull($capturedCode);
+
+        // --- Delivery fee paid via OPay before the order can be confirmed ---
+        \Illuminate\Support\Facades\Http::fake([
+            'sandboxapi.opaycheckout.com/api/v1/international/cashier/status' => \Illuminate\Support\Facades\Http::response([
+                'code' => '00000',
+                'data' => ['status' => 'SUCCESS'],
+            ], 200),
+        ]);
+
+        $deliveryFeePayment = \App\Models\DeliveryFeePayment::create([
+            'order_id' => $order->id,
+            'reference' => 'delfee_test_ref',
+            'amount' => $order->delivery_fee_total,
+            'status' => \App\Enums\DeliveryFeePaymentStatus::Pending,
+        ]);
+        app(\App\Services\DeliveryFeePaymentService::class)->verifyAndActivate('delfee_test_ref');
+
+        $order->refresh();
+        $this->assertTrue($order->deliveryFeePaid());
 
         // --- OTP verification ---
         $otpService = app(OtpService::class);
@@ -133,15 +153,15 @@ class OrderLifecycleTest extends TestCase
         $this->assertSame(VendorOrderStatus::OutForDelivery, $vendorOrder->status);
         $this->assertSame($agent->id, $vendorOrder->delivery_agent_id);
 
-        // --- Delivery + cash collection ---
-        $reconciliation = $vendorOrderService->markDelivered($vendorOrder, $vendorOrder->codTotal());
+        // --- Delivery + cash collection (delivery fee already paid via OPay, so only items are cash) ---
+        $reconciliation = $vendorOrderService->markDelivered($vendorOrder, $vendorOrder->cashDueAtDelivery());
 
         $vendorOrder->refresh();
         $order->refresh();
         $this->assertSame(VendorOrderStatus::Delivered, $vendorOrder->status);
         $this->assertSame(OrderStatus::Completed, $order->status);
         $this->assertSame(ReconciliationStatus::Collected, $reconciliation->status);
-        $this->assertSame($vendorOrder->codTotal(), $order->cod_amount_collected);
+        $this->assertSame($vendorOrder->cashDueAtDelivery(), $order->cod_amount_collected);
 
         // --- Cash reconciliation / remittance ---
         app(ReconciliationService::class)->remit($reconciliation, $reconciliation->amount_collected);
