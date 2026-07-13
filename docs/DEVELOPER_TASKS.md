@@ -101,6 +101,6 @@ skip this step entirely and confirm immediately, same as before this feature exi
 
 ---
 
-Run `php artisan test` after any change — 90 tests currently pass and cover the full order
+Run `php artisan test` after any change — 93 tests currently pass and cover the full order
 lifecycle, registration, product moderation, seller verification, vendor subscription (Paystack
-and OPay), pickup fulfillment, and prepaid delivery-fee flows.
+and OPay), pickup fulfillment, prepaid delivery-fee, and vendor payout-eligibility flows.
