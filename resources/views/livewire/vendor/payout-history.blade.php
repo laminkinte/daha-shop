@@ -1,4 +1,4 @@
-<div class="bg-white rounded-lg shadow overflow-x-auto">
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
     <table class="min-w-full text-sm">
         <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
             <tr>
@@ -9,13 +9,13 @@
                 <th class="px-4 py-3 text-left">Paid At</th>
             </tr>
         </thead>
-        <tbody class="divide-y">
+        <tbody class="divide-y divide-gray-100">
             @forelse ($payouts as $payout)
-                <tr>
+                <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-4 py-3">{{ $payout->period_start->format('M j') }} &ndash; {{ $payout->period_end->format('M j, Y') }}</td>
                     <td class="px-4 py-3 font-semibold">{{ naira($payout->total_amount) }}</td>
                     <td class="px-4 py-3">
-                        <span class="text-xs font-semibold px-2 py-1 rounded-full {{ $payout->status->value === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ $payout->status->value === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">
                             {{ ucfirst($payout->status->value) }}
                         </span>
                     </td>
