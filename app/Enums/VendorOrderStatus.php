@@ -11,6 +11,8 @@ enum VendorOrderStatus: string
     case AssignedToAgent = 'assigned_to_agent';
     case OutForDelivery = 'out_for_delivery';
     case Delivered = 'delivered';
+    case ReadyForPickup = 'ready_for_pickup';
+    case PickedUp = 'picked_up';
     case Failed = 'failed';
     case Cancelled = 'cancelled';
 }

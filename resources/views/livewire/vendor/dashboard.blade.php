@@ -75,6 +75,8 @@
                     'assigned_to_agent' => 'bg-indigo-50 text-indigo-700',
                     'out_for_delivery' => 'bg-sky-50 text-sky-700',
                     'delivered' => 'bg-emerald-50 text-emerald-700',
+                    'ready_for_pickup' => 'bg-indigo-50 text-indigo-700',
+                    'picked_up' => 'bg-emerald-50 text-emerald-700',
                     'failed' => 'bg-red-50 text-red-700',
                     'cancelled' => 'bg-gray-100 text-gray-600',
                 ];

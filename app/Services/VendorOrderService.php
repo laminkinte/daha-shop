@@ -93,6 +93,33 @@ class VendorOrderService
         return $reconciliation;
     }
 
+    public function markReadyForPickup(VendorOrder $vendorOrder): void
+    {
+        $vendorOrder->update([
+            'status' => VendorOrderStatus::ReadyForPickup,
+            'ready_for_pickup_at' => now(),
+        ]);
+    }
+
+    /**
+     * The vendor collects cash directly from the customer at pickup, so
+     * unlike markDelivered() there's no delivery agent involved and no
+     * CashReconciliation row - the vendor already has the money in hand and
+     * doesn't need it remitted back via a payout.
+     */
+    public function markPickedUp(VendorOrder $vendorOrder, int $cashCollected): void
+    {
+        $vendorOrder->update([
+            'status' => VendorOrderStatus::PickedUp,
+            'picked_up_at' => now(),
+            'cash_collected' => $cashCollected,
+        ]);
+
+        $vendorOrder->order->increment('cod_amount_collected', $cashCollected);
+
+        $this->finalizeOrderIfResolved($vendorOrder);
+    }
+
     public function markFailed(VendorOrder $vendorOrder, DeliveryFailureReason $reason): void
     {
         $vendorOrder->increment('delivery_attempts');
@@ -128,12 +155,12 @@ class VendorOrderService
             return;
         }
 
-        $anyDelivered = $order->vendorOrders->contains(
-            fn (VendorOrder $vo) => $vo->status === VendorOrderStatus::Delivered
+        $anyFulfilled = $order->vendorOrders->contains(
+            fn (VendorOrder $vo) => in_array($vo->status, [VendorOrderStatus::Delivered, VendorOrderStatus::PickedUp], true)
         );
 
         $order->update([
-            'status' => $anyDelivered ? OrderStatus::Completed : OrderStatus::Cancelled,
+            'status' => $anyFulfilled ? OrderStatus::Completed : OrderStatus::Cancelled,
         ]);
     }
 }

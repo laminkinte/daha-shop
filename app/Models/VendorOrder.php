@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\FulfillmentMethod;
 use App\Enums\VendorOrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,19 +13,22 @@ class VendorOrder extends Model
 {
     protected $fillable = [
         'order_id', 'vendor_id', 'delivery_agent_id', 'vendor_payout_id', 'status',
-        'items_subtotal', 'delivery_fee', 'cash_collected', 'delivery_attempts',
+        'fulfillment_method', 'items_subtotal', 'delivery_fee', 'cash_collected', 'delivery_attempts',
         'failure_reason', 'proof_of_delivery_path',
-        'accepted_at', 'packed_at', 'out_for_delivery_at', 'delivered_at',
+        'accepted_at', 'packed_at', 'ready_for_pickup_at', 'out_for_delivery_at', 'delivered_at', 'picked_up_at',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => VendorOrderStatus::class,
+            'fulfillment_method' => FulfillmentMethod::class,
             'accepted_at' => 'datetime',
             'packed_at' => 'datetime',
+            'ready_for_pickup_at' => 'datetime',
             'out_for_delivery_at' => 'datetime',
             'delivered_at' => 'datetime',
+            'picked_up_at' => 'datetime',
         ];
     }
 
@@ -63,10 +67,16 @@ class VendorOrder extends Model
         return $this->items_subtotal + $this->delivery_fee;
     }
 
+    public function isPickup(): bool
+    {
+        return $this->fulfillment_method === FulfillmentMethod::Pickup;
+    }
+
     public function isTerminal(): bool
     {
         return in_array($this->status, [
             VendorOrderStatus::Delivered,
+            VendorOrderStatus::PickedUp,
             VendorOrderStatus::Failed,
             VendorOrderStatus::Cancelled,
             VendorOrderStatus::Rejected,

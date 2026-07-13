@@ -35,6 +35,8 @@ class Checkout extends Component
 
     public string $label = 'Home';
 
+    public array $fulfillmentMethods = [];
+
     public ?string $errorMessage = null;
 
     public function mount(): void
@@ -91,15 +93,27 @@ class Checkout extends Component
         foreach ($items->groupBy(fn ($item) => $item->product->vendor_id) as $vendorItems) {
             $vendor = $vendorItems->first()->product->vendor;
             $vendorSubtotal = $vendorItems->sum(fn ($item) => $item->unitPrice() * $item->quantity);
+            $isPickup = ($this->fulfillmentMethods[$vendor->id] ?? 'delivery') === 'pickup';
 
-            try {
-                $fee = $calculator->feeFor($address, $vendor);
-            } catch (DeliveryNotAvailableException) {
-                $unavailable = true;
+            if ($isPickup) {
                 $fee = 0;
+            } else {
+                try {
+                    $fee = $calculator->feeFor($address, $vendor);
+                } catch (DeliveryNotAvailableException) {
+                    $unavailable = true;
+                    $fee = 0;
+                }
             }
 
-            $lines[] = ['vendor' => $vendor->business_name, 'subtotal' => $vendorSubtotal, 'fee' => $fee];
+            $lines[] = [
+                'vendor_id' => $vendor->id,
+                'vendor' => $vendor->business_name,
+                'vendor_address' => $vendor->business_address,
+                'subtotal' => $vendorSubtotal,
+                'fee' => $fee,
+                'pickup' => $isPickup,
+            ];
             $itemsSubtotal += $vendorSubtotal;
             $deliveryTotal += $fee;
         }
@@ -153,7 +167,7 @@ class Checkout extends Component
         }
 
         try {
-            $order = $checkoutService->placeOrder(Auth::user(), $resolver->current(), $address);
+            $order = $checkoutService->placeOrder(Auth::user(), $resolver->current(), $address, $this->fulfillmentMethods);
         } catch (EmptyCartException|CustomerBlacklistedException|DeliveryNotAvailableException $e) {
             $this->errorMessage = $e->getMessage();
 

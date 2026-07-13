@@ -27,7 +27,7 @@ class OrderTracking extends Component
     {
         $item = $this->order->vendorOrders->flatMap->items->firstWhere('id', $orderItemId);
 
-        abort_unless($item && $item->vendorOrder->status === VendorOrderStatus::Delivered, 403);
+        abort_unless($item && in_array($item->vendorOrder->status, [VendorOrderStatus::Delivered, VendorOrderStatus::PickedUp], true), 403);
 
         Review::updateOrCreate(
             ['order_item_id' => $orderItemId],

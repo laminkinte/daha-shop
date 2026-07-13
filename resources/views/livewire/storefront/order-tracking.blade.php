@@ -26,8 +26,8 @@
     </div>
 
     @php
-        $steps = ['pending' => 'Placed', 'accepted' => 'Accepted', 'packed' => 'Packed', 'assigned_to_agent' => 'Assigned', 'out_for_delivery' => 'Out for Delivery', 'delivered' => 'Delivered'];
-        $stepKeys = array_keys($steps);
+        $deliverySteps = ['pending' => 'Placed', 'accepted' => 'Accepted', 'packed' => 'Packed', 'assigned_to_agent' => 'Assigned', 'out_for_delivery' => 'Out for Delivery', 'delivered' => 'Delivered'];
+        $pickupSteps = ['pending' => 'Placed', 'accepted' => 'Accepted', 'packed' => 'Packed', 'ready_for_pickup' => 'Ready for Pickup', 'picked_up' => 'Picked Up'];
         $statusStyles = [
             'pending' => 'bg-amber-50 text-amber-700',
             'accepted' => 'bg-blue-50 text-blue-700',
@@ -35,6 +35,8 @@
             'assigned_to_agent' => 'bg-indigo-50 text-indigo-700',
             'out_for_delivery' => 'bg-sky-50 text-sky-700',
             'delivered' => 'bg-emerald-50 text-emerald-700',
+            'ready_for_pickup' => 'bg-indigo-50 text-indigo-700',
+            'picked_up' => 'bg-emerald-50 text-emerald-700',
             'rejected' => 'bg-red-50 text-red-700',
             'failed' => 'bg-red-50 text-red-700',
             'cancelled' => 'bg-gray-100 text-gray-600',
@@ -42,11 +44,27 @@
     @endphp
 
     @foreach ($order->vendorOrders as $vendorOrder)
+        @php
+            $steps = $vendorOrder->isPickup() ? $pickupSteps : $deliverySteps;
+            $stepKeys = array_keys($steps);
+            $isFulfilled = in_array($vendorOrder->status->value, ['delivered', 'picked_up'], true);
+        @endphp
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="font-semibold text-gray-800">{{ $vendorOrder->vendor->business_name }}</h2>
+                <h2 class="font-semibold text-gray-800">
+                    {{ $vendorOrder->vendor->business_name }}
+                    @if ($vendorOrder->isPickup())
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 ml-1">Pickup</span>
+                    @endif
+                </h2>
                 <span class="text-xs font-semibold px-2.5 py-1 rounded-full capitalize {{ $statusStyles[$vendorOrder->status->value] ?? 'bg-gray-100 text-gray-700' }}">{{ str_replace('_',' ',$vendorOrder->status->value) }}</span>
             </div>
+
+            @if ($vendorOrder->isPickup())
+                <div class="mb-4 rounded-lg bg-purple-50 border border-purple-100 px-3 py-2 text-xs text-purple-800">
+                    Pick up from: <strong>{{ $vendorOrder->vendor->business_name }}</strong> &mdash; {{ $vendorOrder->vendor->business_address }}
+                </div>
+            @endif
 
             @unless (in_array($vendorOrder->status->value, ['rejected', 'failed', 'cancelled']))
                 @php $currentIndex = array_search($vendorOrder->status->value, $stepKeys); @endphp
@@ -70,7 +88,7 @@
                         <span class="font-medium">{{ naira($item->subtotal) }}</span>
                     </div>
 
-                    @if ($vendorOrder->status->value === 'delivered')
+                    @if ($isFulfilled)
                         <div class="bg-gray-50 rounded-lg p-3 mt-1">
                             @if ($item->review)
                                 <div class="text-xs text-gray-500">Your review: <span class="text-amber-500">{{ str_repeat('★', $item->review->rating) }}</span> {{ $item->review->comment }}</div>
@@ -90,7 +108,7 @@
                 @endforeach
 
                 <div class="flex justify-between text-sm pt-2 border-t border-gray-100 font-semibold">
-                    <span>Delivery Fee</span><span>{{ naira($vendorOrder->delivery_fee) }}</span>
+                    <span>{{ $vendorOrder->isPickup() ? 'Delivery Fee (pickup - none)' : 'Delivery Fee' }}</span><span>{{ naira($vendorOrder->delivery_fee) }}</span>
                 </div>
             </div>
         </div>

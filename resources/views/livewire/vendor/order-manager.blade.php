@@ -16,6 +16,8 @@
             'packed' => 'bg-indigo-50 text-indigo-700',
             'assigned_to_agent' => 'bg-indigo-50 text-indigo-700',
             'out_for_delivery' => 'bg-sky-50 text-sky-700',
+            'ready_for_pickup' => 'bg-indigo-50 text-indigo-700',
+            'picked_up' => 'bg-emerald-50 text-emerald-700',
             'delivered' => 'bg-emerald-50 text-emerald-700',
             'failed' => 'bg-red-50 text-red-700',
             'cancelled' => 'bg-gray-100 text-gray-600',
@@ -29,6 +31,9 @@
                     <div>
                         <span class="font-semibold">#{{ $vendorOrder->order->order_number }}</span>
                         <span class="text-xs text-gray-400 ml-2">{{ $vendorOrder->created_at->diffForHumans() }}</span>
+                        @if ($vendorOrder->isPickup())
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 ml-2">Pickup</span>
+                        @endif
                     </div>
                     <span class="text-xs font-semibold px-2.5 py-1 rounded-full capitalize {{ $statusStyles[$vendorOrder->status->value] ?? 'bg-gray-100 text-gray-700' }}">{{ str_replace('_',' ',$vendorOrder->status->value) }}</span>
                 </div>
@@ -44,12 +49,17 @@
 
                 <div class="flex justify-between items-center border-t border-gray-100 pt-3">
                     <span class="font-semibold">{{ naira($vendorOrder->items_subtotal) }}</span>
-                    <div class="space-x-2">
+                    <div class="flex items-center gap-2">
                         @if ($vendorOrder->status->value === 'pending')
                             <button wire:click="accept({{ $vendorOrder->id }})" class="text-xs bg-green-700 hover:bg-green-800 text-white px-3 py-1.5 rounded-lg transition-colors">Accept</button>
                             <button wire:click="reject({{ $vendorOrder->id }})" wire:confirm="Reject this order?" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition-colors">Reject</button>
                         @elseif ($vendorOrder->status->value === 'accepted')
                             <button wire:click="pack({{ $vendorOrder->id }})" class="text-xs bg-green-700 hover:bg-green-800 text-white px-3 py-1.5 rounded-lg transition-colors">Mark Packed &amp; Ready</button>
+                        @elseif ($vendorOrder->status->value === 'packed' && $vendorOrder->isPickup())
+                            <button wire:click="markReadyForPickup({{ $vendorOrder->id }})" class="text-xs bg-green-700 hover:bg-green-800 text-white px-3 py-1.5 rounded-lg transition-colors">Mark Ready for Pickup</button>
+                        @elseif ($vendorOrder->status->value === 'ready_for_pickup')
+                            <input type="text" wire:model="pickupCash.{{ $vendorOrder->id }}" placeholder="{{ naira($vendorOrder->codTotal()) }}" class="w-24 text-xs rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                            <button wire:click="confirmPickedUp({{ $vendorOrder->id }})" class="text-xs bg-green-700 hover:bg-green-800 text-white px-3 py-1.5 rounded-lg transition-colors">Confirm Picked Up &amp; Cash Collected</button>
                         @endif
                     </div>
                 </div>

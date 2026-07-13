@@ -86,14 +86,29 @@
             <h2 class="font-semibold text-gray-800 mb-4">Order Summary</h2>
 
             @if ($this->feePreview['unavailable'])
-                <p class="text-sm text-red-600 mb-3">Delivery isn't available to this address yet for one or more vendors.</p>
+                <p class="text-sm text-red-600 mb-3">Delivery isn't available to this address yet for one or more vendors &mdash; choose pickup instead.</p>
             @endif
 
-            <div class="space-y-2 text-sm">
+            <div class="space-y-3 text-sm">
                 @foreach ($this->feePreview['lines'] as $line)
-                    <div class="flex justify-between text-gray-600">
-                        <span>{{ $line['vendor'] }}</span>
-                        <span>{{ naira($line['subtotal']) }} + {{ naira($line['fee']) }} delivery</span>
+                    <div>
+                        <div class="flex justify-between text-gray-600">
+                            <span>{{ $line['vendor'] }}</span>
+                            <span>{{ naira($line['subtotal']) }} {{ $line['pickup'] ? '' : '+ '.naira($line['fee']).' delivery' }}</span>
+                        </div>
+                        <div class="mt-1 flex items-center gap-3 text-xs">
+                            <label class="flex items-center gap-1 cursor-pointer">
+                                <input type="radio" wire:model.live="fulfillmentMethods.{{ $line['vendor_id'] }}" value="delivery" class="text-green-700 focus:ring-green-500">
+                                Deliver to my address
+                            </label>
+                            <label class="flex items-center gap-1 cursor-pointer">
+                                <input type="radio" wire:model.live="fulfillmentMethods.{{ $line['vendor_id'] }}" value="pickup" class="text-green-700 focus:ring-green-500">
+                                Pick up myself
+                            </label>
+                        </div>
+                        @if ($line['pickup'])
+                            <p class="mt-1 text-xs text-gray-400">Pickup from: {{ $line['vendor_address'] }}</p>
+                        @endif
                     </div>
                 @endforeach
             </div>

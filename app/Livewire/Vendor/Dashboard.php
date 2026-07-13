@@ -17,7 +17,15 @@ class Dashboard extends Component
         $stats = [
             'products' => $vendor->products()->count(),
             'pending_orders' => $vendor->vendorOrders()->whereIn('status', [VendorOrderStatus::Pending, VendorOrderStatus::Accepted])->count(),
-            'delivered_this_month' => $vendor->vendorOrders()->where('status', VendorOrderStatus::Delivered)->whereMonth('delivered_at', now()->month)->count(),
+            'delivered_this_month' => $vendor->vendorOrders()
+                ->where(function ($query) {
+                    $query->where(function ($q) {
+                        $q->where('status', VendorOrderStatus::Delivered)->whereMonth('delivered_at', now()->month);
+                    })->orWhere(function ($q) {
+                        $q->where('status', VendorOrderStatus::PickedUp)->whereMonth('picked_up_at', now()->month);
+                    });
+                })
+                ->count(),
             'pending_payout' => $vendor->vendorOrders()->where('status', VendorOrderStatus::Delivered)->whereNull('vendor_payout_id')->sum('items_subtotal'),
         ];
 

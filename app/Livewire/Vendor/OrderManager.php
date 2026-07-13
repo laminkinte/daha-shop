@@ -17,6 +17,8 @@ class OrderManager extends Component
 
     public string $filter = 'all';
 
+    public array $pickupCash = [];
+
     public function accept(int $vendorOrderId, VendorOrderService $service): void
     {
         $service->accept($this->authorizedOrder($vendorOrderId));
@@ -30,6 +32,19 @@ class OrderManager extends Component
     public function pack(int $vendorOrderId, VendorOrderService $service): void
     {
         $service->pack($this->authorizedOrder($vendorOrderId));
+    }
+
+    public function markReadyForPickup(int $vendorOrderId, VendorOrderService $service): void
+    {
+        $service->markReadyForPickup($this->authorizedOrder($vendorOrderId));
+    }
+
+    public function confirmPickedUp(int $vendorOrderId, VendorOrderService $service): void
+    {
+        $vendorOrder = $this->authorizedOrder($vendorOrderId);
+        $cash = (int) round(((float) ($this->pickupCash[$vendorOrderId] ?? 0)) * 100);
+
+        $service->markPickedUp($vendorOrder, $cash > 0 ? $cash : $vendorOrder->codTotal());
     }
 
     private function authorizedOrder(int $vendorOrderId): VendorOrder

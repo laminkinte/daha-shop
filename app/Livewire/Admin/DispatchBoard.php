@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Enums\AgentAvailability;
+use App\Enums\FulfillmentMethod;
 use App\Enums\VendorOrderStatus;
 use App\Models\DeliveryAgent;
 use App\Models\VendorOrder;
@@ -29,6 +30,7 @@ class DispatchBoard extends Component
     public function render()
     {
         $packedOrders = VendorOrder::where('status', VendorOrderStatus::Packed)
+            ->where('fulfillment_method', FulfillmentMethod::Delivery)
             ->with('order', 'vendor')
             ->latest()
             ->get();

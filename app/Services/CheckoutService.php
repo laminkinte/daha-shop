@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\FulfillmentMethod;
 use App\Enums\VendorOrderStatus;
 use App\Exceptions\CustomerBlacklistedException;
 use App\Exceptions\EmptyCartException;
@@ -23,10 +24,12 @@ class CheckoutService
     ) {}
 
     /**
+     * @param  array<int, string>  $fulfillmentMethods  vendor_id => 'delivery'|'pickup'
+     *
      * @throws EmptyCartException
      * @throws CustomerBlacklistedException
      */
-    public function placeOrder(User $user, Cart $cart, Address $address): Order
+    public function placeOrder(User $user, Cart $cart, Address $address, array $fulfillmentMethods = []): Order
     {
         if ($cart->items->isEmpty()) {
             throw new EmptyCartException;
@@ -36,7 +39,7 @@ class CheckoutService
             throw new CustomerBlacklistedException;
         }
 
-        $order = DB::transaction(function () use ($user, $cart, $address) {
+        $order = DB::transaction(function () use ($user, $cart, $address, $fulfillmentMethods) {
             $order = Order::create([
                 'order_number' => $this->generateOrderNumber(),
                 'user_id' => $user->id,
@@ -55,12 +58,14 @@ class CheckoutService
             foreach ($itemsByVendor as $vendorItems) {
                 $vendor = $vendorItems->first()->product->vendor;
                 $vendorItemsSubtotal = $vendorItems->sum(fn ($item) => $item->unitPrice() * $item->quantity);
-                $deliveryFee = $this->feeCalculator->feeFor($address, $vendor);
+                $isPickup = ($fulfillmentMethods[$vendor->id] ?? 'delivery') === FulfillmentMethod::Pickup->value;
+                $deliveryFee = $isPickup ? 0 : $this->feeCalculator->feeFor($address, $vendor);
 
                 $vendorOrder = VendorOrder::create([
                     'order_id' => $order->id,
                     'vendor_id' => $vendor->id,
                     'status' => VendorOrderStatus::Pending,
+                    'fulfillment_method' => $isPickup ? FulfillmentMethod::Pickup : FulfillmentMethod::Delivery,
                     'items_subtotal' => $vendorItemsSubtotal,
                     'delivery_fee' => $deliveryFee,
                 ]);
