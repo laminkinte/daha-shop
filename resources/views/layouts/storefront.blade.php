@@ -21,15 +21,15 @@
                     Daha <span class="text-green-200">Shop</span>
                 </a>
 
-                <form action="{{ route('storefront.home') }}" method="GET" class="hidden md:flex flex-1 max-w-xl">
+                <form action="{{ route('storefront.home') }}" method="GET" class="hidden md:flex flex-1 max-w-xl items-center bg-white rounded-lg shadow-sm ring-1 ring-white/10 focus-within:ring-2 focus-within:ring-green-300 overflow-hidden">
                     <input
                         type="text"
                         name="q"
                         value="{{ request('q') }}"
                         placeholder="Search products..."
-                        class="w-full rounded-l-md border-0 px-4 py-2 text-gray-900 focus:ring-2 focus:ring-green-400"
+                        class="w-full border-0 px-4 py-2 text-gray-900 focus:ring-0"
                     >
-                    <button type="submit" class="rounded-r-md bg-green-900 px-4 py-2 hover:bg-green-950">
+                    <button type="submit" class="shrink-0 px-4 py-2 text-gray-500 hover:text-green-700">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
                     </button>
                 </form>
@@ -51,40 +51,59 @@
                                 <span class="hidden sm:inline">{{ auth()->user()->name }}</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
                             </button>
-                            <div x-show="open" x-cloak class="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-md shadow-lg py-1 text-sm">
+                            <div x-show="open" x-cloak x-transition class="absolute right-0 mt-2 w-52 bg-white text-gray-800 rounded-xl border border-gray-100 shadow-lg py-1.5 text-sm">
                                 @if (auth()->user()->isVendor())
-                                    <a href="{{ route('vendor.dashboard') }}" class="block px-4 py-2 hover:bg-gray-100">Vendor Dashboard</a>
+                                    <a href="{{ route('vendor.dashboard') }}" class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h12A2.25 2.25 0 0120.25 6v12A2.25 2.25 0 0118 20.25H6A2.25 2.25 0 013.75 18V6z" /></svg>
+                                        Vendor Dashboard
+                                    </a>
                                 @elseif(auth()->user()->isAdmin())
-                                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 hover:bg-gray-100">Admin Dashboard</a>
+                                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" /></svg>
+                                        Admin Dashboard
+                                    </a>
                                 @elseif(auth()->user()->isAgent())
-                                    <a href="{{ route('agent.deliveries') }}" class="block px-4 py-2 hover:bg-gray-100">Agent App</a>
+                                    <a href="{{ route('agent.deliveries') }}" class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.25h5.401c.585 0 1.09.408 1.212.98l1.244 5.85c.084.399-.012.812-.264 1.129M14.25 7.5v8.25m-6-8.25H3.375c-.621 0-1.125.504-1.125 1.125v9.75c0 .621.504 1.125 1.125 1.125h1.5" /></svg>
+                                        Agent App
+                                    </a>
                                 @endif
-                                <a href="{{ route('storefront.orders') }}" wire:navigate class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
-                                <a href="{{ route('profile') }}" wire:navigate class="block px-4 py-2 hover:bg-gray-100">Profile</a>
+                                <a href="{{ route('storefront.orders') }}" wire:navigate class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    My Orders
+                                </a>
+                                <a href="{{ route('profile') }}" wire:navigate class="flex items-center gap-2 px-4 py-2 hover:bg-gray-50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    Profile
+                                </a>
+                                <div class="my-1 border-t border-gray-100"></div>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
-                                    <button type="submit" class="w-full text-left px-4 py-2 hover:bg-gray-100">Log Out</button>
+                                    <button type="submit" class="w-full flex items-center gap-2 text-left px-4 py-2 hover:bg-gray-50 text-red-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+                                        Log Out
+                                    </button>
                                 </form>
                             </div>
                         </div>
                     @else
                         <a href="{{ route('login') }}" wire:navigate class="hover:text-green-200">Login</a>
-                        <a href="{{ route('register') }}" wire:navigate class="bg-white text-green-700 px-3 py-1.5 rounded-md font-medium hover:bg-green-50">Sign Up</a>
+                        <a href="{{ route('register') }}" wire:navigate class="bg-white text-green-700 px-3 py-1.5 rounded-lg font-medium shadow-sm hover:bg-green-50">Sign Up</a>
                     @endauth
                 </div>
             </div>
 
             <div x-show="mobileSearchOpen" x-cloak x-transition class="md:hidden pb-3">
-                <form action="{{ route('storefront.home') }}" method="GET" class="flex">
+                <form action="{{ route('storefront.home') }}" method="GET" class="flex items-center bg-white rounded-lg shadow-sm overflow-hidden">
                     <input
                         type="text"
                         name="q"
                         value="{{ request('q') }}"
                         placeholder="Search products..."
                         autofocus
-                        class="w-full rounded-l-md border-0 px-4 py-2 text-gray-900 focus:ring-2 focus:ring-green-400"
+                        class="w-full border-0 px-4 py-2 text-gray-900 focus:ring-0"
                     >
-                    <button type="submit" class="rounded-r-md bg-green-900 px-4 py-2 hover:bg-green-950">
+                    <button type="submit" class="shrink-0 px-4 py-2 text-gray-500 hover:text-green-700">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
                     </button>
                 </form>

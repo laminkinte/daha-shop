@@ -14,10 +14,10 @@
                 </p>
 
                 <div class="mt-8 flex flex-wrap gap-3">
-                    <a href="#products" class="bg-white text-green-700 font-semibold px-6 py-3 rounded-md hover:bg-green-50 transition">
+                    <a href="#products" class="bg-white text-green-700 font-semibold px-6 py-3 rounded-lg shadow-sm hover:bg-green-50 transition-colors">
                         Shop Now
                     </a>
-                    <a href="{{ route('register') }}?as=seller" wire:navigate class="border border-white/40 text-white font-semibold px-6 py-3 rounded-md hover:bg-white/10 transition">
+                    <a href="{{ route('register') }}?as=seller" wire:navigate class="border border-white/40 text-white font-semibold px-6 py-3 rounded-lg hover:bg-white/10 transition-colors">
                         Become a Seller
                     </a>
                 </div>
@@ -43,7 +43,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="products">
 
         @if (session('cart_message'))
-            <div class="mb-6 rounded-md bg-green-50 border border-green-200 text-green-800 px-4 py-3 text-sm">
+            <div class="mb-6 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 text-sm">
                 {{ session('cart_message') }}
             </div>
         @endif
@@ -73,7 +73,7 @@
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div class="text-sm text-gray-500">{{ $products->total() }} products found</div>
-            <select wire:model.live="sort" class="rounded-md border-gray-300 text-sm">
+            <select wire:model.live="sort" class="rounded-lg border-gray-300 text-sm focus:border-green-500 focus:ring-green-500">
                 <option value="newest">Newest</option>
                 <option value="price_low">Price: Low to High</option>
                 <option value="price_high">Price: High to Low</option>
@@ -82,7 +82,7 @@
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             @forelse ($products as $product)
-                <div class="bg-white rounded-lg shadow hover:shadow-md transition overflow-hidden flex flex-col">
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
                     <a href="{{ route('storefront.product', $product->slug) }}" wire:navigate>
                         <div class="aspect-square bg-gray-100 flex items-center justify-center text-gray-300">
                             @if ($product->images->first())
@@ -98,13 +98,16 @@
                         </a>
                         <div class="text-xs text-gray-400 mt-1">{{ $product->vendor->business_name }}</div>
                         <div class="mt-2 font-bold text-green-700">{{ naira($product->base_price) }}</div>
-                        <button wire:click="addToCart({{ $product->id }})" class="mt-auto pt-3 w-full bg-green-700 hover:bg-green-800 text-white text-xs font-semibold py-2 rounded-md">
+                        <button wire:click="addToCart({{ $product->id }})" class="mt-auto pt-3 w-full bg-green-700 hover:bg-green-800 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
                             Add to Cart
                         </button>
                     </div>
                 </div>
             @empty
-                <p class="col-span-full text-gray-500 text-sm py-12 text-center">No products found.</p>
+                <div class="col-span-full text-center py-16">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                    <p class="text-gray-500 text-sm mt-3">No products found.</p>
+                </div>
             @endforelse
         </div>
 

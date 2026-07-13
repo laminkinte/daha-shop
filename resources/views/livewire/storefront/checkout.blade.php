@@ -2,20 +2,20 @@
     <h1 class="text-2xl font-bold text-gray-900 mb-6">Checkout</h1>
 
     @if ($errorMessage)
-        <div class="mb-6 rounded-md bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+        <div class="mb-6 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
             {{ $errorMessage }}
         </div>
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
                 <h2 class="font-semibold text-gray-800 mb-4">Delivery Address</h2>
 
                 @if ($addresses->isNotEmpty())
                     <div class="space-y-2 mb-4">
                         @foreach ($addresses as $address)
-                            <label class="flex items-start gap-3 border rounded-md p-3 cursor-pointer {{ !$useNewAddress && $selectedAddressId === $address->id ? 'border-green-600 bg-green-50' : 'border-gray-200' }}">
+                            <label class="flex items-start gap-3 border rounded-lg p-3 cursor-pointer transition-colors {{ !$useNewAddress && $selectedAddressId === $address->id ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-gray-300' }}">
                                 <input type="radio" wire:click="$set('useNewAddress', false)" wire:model="selectedAddressId" value="{{ $address->id }}" class="mt-1">
                                 <span class="text-sm">
                                     <span class="font-medium">{{ $address->label }}</span> &mdash;
@@ -35,7 +35,7 @@
                     <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="text-sm font-medium text-gray-700">State</label>
-                            <select wire:model.live="stateId" class="mt-1 w-full rounded-md border-gray-300">
+                            <select wire:model.live="stateId" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
                                 <option value="">Select state</option>
                                 @foreach ($states as $state)
                                     <option value="{{ $state->id }}">{{ $state->name }}</option>
@@ -45,7 +45,7 @@
                         </div>
                         <div>
                             <label class="text-sm font-medium text-gray-700">LGA</label>
-                            <select wire:model.live="lgaId" class="mt-1 w-full rounded-md border-gray-300">
+                            <select wire:model.live="lgaId" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
                                 <option value="">Select LGA</option>
                                 @foreach ($this->lgas as $lga)
                                     <option value="{{ $lga->id }}">{{ $lga->name }}</option>
@@ -55,22 +55,22 @@
                         </div>
                         <div class="sm:col-span-2">
                             <label class="text-sm font-medium text-gray-700">Area / Neighborhood</label>
-                            <input type="text" wire:model="area" class="mt-1 w-full rounded-md border-gray-300">
+                            <input type="text" wire:model="area" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
                             @error('area') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                         </div>
                         <div class="sm:col-span-2">
                             <label class="text-sm font-medium text-gray-700">Street Address</label>
-                            <textarea wire:model="streetAddress" rows="2" class="mt-1 w-full rounded-md border-gray-300"></textarea>
+                            <textarea wire:model="streetAddress" rows="2" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500"></textarea>
                             @error('streetAddress') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                         </div>
                         <div>
                             <label class="text-sm font-medium text-gray-700">Phone Number</label>
-                            <input type="text" wire:model="phone" placeholder="+234..." class="mt-1 w-full rounded-md border-gray-300">
+                            <input type="text" wire:model="phone" placeholder="+234..." class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
                             @error('phone') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                         </div>
                         <div>
                             <label class="text-sm font-medium text-gray-700">Landmark (optional)</label>
-                            <input type="text" wire:model="landmark" class="mt-1 w-full rounded-md border-gray-300">
+                            <input type="text" wire:model="landmark" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
                         </div>
                     </div>
                 @endif
@@ -82,7 +82,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6 h-fit">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 h-fit">
             <h2 class="font-semibold text-gray-800 mb-4">Order Summary</h2>
 
             @if ($this->feePreview['unavailable'])
@@ -110,7 +110,7 @@
                 </div>
             </div>
 
-            <button wire:click="placeOrder" wire:loading.attr="disabled" class="mt-6 w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-md disabled:opacity-60">
+            <button wire:click="placeOrder" wire:loading.attr="disabled" class="mt-6 w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60">
                 Place Order &mdash; Pay on Delivery
             </button>
         </div>

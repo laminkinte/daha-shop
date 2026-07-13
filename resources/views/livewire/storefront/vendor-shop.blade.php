@@ -1,7 +1,7 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     @if (session('cart_message'))
-        <div class="mb-4 rounded-md bg-green-50 border border-green-200 text-green-800 px-4 py-3 text-sm">
+        <div class="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 text-sm">
             {{ session('cart_message') }}
         </div>
     @endif
@@ -16,7 +16,7 @@
 
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         @forelse ($products as $product)
-            <div class="bg-white rounded-lg shadow hover:shadow-md transition overflow-hidden flex flex-col">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
                 <a href="{{ route('storefront.product', $product->slug) }}" wire:navigate>
                     <div class="aspect-square bg-gray-100 flex items-center justify-center text-gray-300">
                         @if ($product->images->first())
@@ -32,13 +32,16 @@
                     </a>
                     <div class="text-xs text-gray-400 mt-1">{{ $product->category->name }}</div>
                     <div class="mt-2 font-bold text-green-700">{{ naira($product->base_price) }}</div>
-                    <button wire:click="addToCart({{ $product->id }})" class="mt-auto pt-3 w-full bg-green-700 hover:bg-green-800 text-white text-xs font-semibold py-2 rounded-md">
+                    <button wire:click="addToCart({{ $product->id }})" class="mt-auto pt-3 w-full bg-green-700 hover:bg-green-800 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
                         Add to Cart
                     </button>
                 </div>
             </div>
         @empty
-            <p class="col-span-full text-gray-500 text-sm py-12 text-center">This seller has no products listed yet.</p>
+            <div class="col-span-full text-center py-16">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                <p class="text-gray-500 text-sm mt-3">This seller has no products listed yet.</p>
+            </div>
         @endforelse
     </div>
 
