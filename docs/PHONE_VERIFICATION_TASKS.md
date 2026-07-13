@@ -11,14 +11,14 @@ theoretical.
 
 ## High priority
 
-**1. Forgot-password is silently broken for PIN accounts.**
-Phone/PIN accounts get a synthetic email (`{phone}@phone.dahashop.internal`, see
-`register.blade.php`) so `users.email` stays unique/NOT NULL. But Breeze's password-reset flow
-(`resources/views/livewire/pages/auth/forgot-password.blade.php`) emails a reset link — which for
-these accounts goes to an address nobody reads. A PIN account that forgets its PIN currently has
-**no recovery path at all**. This needs an SMS-based "forgot PIN" flow: send an OTP to the phone,
-let them set a new PIN on successful verification, bypassing the email-link mechanism entirely
-for `uses_pin = true` accounts.
+**1. ~~Forgot-password is silently broken for PIN accounts.~~ RESOLVED.**
+Built by Kambaza2003 (`resources/views/livewire/pages/auth/forgot-pin.blade.php`, `pin.request`
+route): sends an OTP (purpose `pin_reset`) to the phone, verifies it, then updates the password
+column directly for `uses_pin = true` accounts. Verified compatible with the rest of the app in a
+separate clean-clone check — merges cleanly, doesn't break any of the 93 existing tests, and a
+live end-to-end run (send code → reset → log in with the new PIN) actually works. One gap it
+still has: `sendOtp()` has no rate limit, so it inherits the same "no rate limiting" issue as item
+4 below — worth closing both together.
 
 ---
 
