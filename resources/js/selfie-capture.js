@@ -66,15 +66,25 @@ document.addEventListener('alpine:init', () => {
         _startDetection() {
             const faceapi = this._faceapi;
             const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
+            this._detecting = true;
 
-            this._interval = setInterval(async () => {
-                if (!this.ready || this.captured) {
+            // Self-scheduling loop (setTimeout after each detection resolves)
+            // rather than a fixed-rate setInterval: on a slow backend (e.g. the
+            // CPU fallback used when WebGL isn't available) a single
+            // detectSingleFace() call can take longer than DETECT_INTERVAL_MS,
+            // so a fixed interval would overlap ticks. An in-flight tick whose
+            // await resolves after capture() has already swapped the video
+            // element out of the DOM would then dereference an undefined
+            // $refs.video.
+            const tick = async () => {
+                if (!this._detecting || !this.ready || this.captured) {
                     return;
                 }
 
                 const video = this.$refs.video;
 
-                if (!video.videoWidth) {
+                if (!video || !video.videoWidth) {
+                    this._interval = setTimeout(tick, DETECT_INTERVAL_MS);
                     return;
                 }
 
@@ -83,11 +93,16 @@ document.addEventListener('alpine:init', () => {
                 try {
                     detection = await faceapi.detectSingleFace(video, options);
                 } catch (e) {
+                    detection = null;
+                }
+
+                if (!this._detecting || this.captured) {
                     return;
                 }
 
                 if (!detection) {
                     this._resetHold('Position your face in the frame');
+                    this._interval = setTimeout(tick, DETECT_INTERVAL_MS);
                     return;
                 }
 
@@ -119,9 +134,14 @@ document.addEventListener('alpine:init', () => {
 
                     if (this.holdProgress >= 1) {
                         this.capture();
+                        return;
                     }
                 }
-            }, DETECT_INTERVAL_MS);
+
+                this._interval = setTimeout(tick, DETECT_INTERVAL_MS);
+            };
+
+            tick();
         },
 
         _resetHold(message) {
@@ -132,8 +152,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         capture() {
+            this._detecting = false;
+
             if (this._interval) {
-                clearInterval(this._interval);
+                clearTimeout(this._interval);
                 this._interval = null;
             }
 
@@ -171,8 +193,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         destroy() {
+            this._detecting = false;
+
             if (this._interval) {
-                clearInterval(this._interval);
+                clearTimeout(this._interval);
             }
 
             this.stream?.getTracks().forEach((track) => track.stop());
