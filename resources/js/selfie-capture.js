@@ -1,5 +1,3 @@
-import * as faceapi from 'face-api.js';
-
 const HOLD_MS = 1200;
 const DETECT_INTERVAL_MS = 200;
 const TOO_FAR_RATIO = 0.26;
@@ -21,6 +19,7 @@ document.addEventListener('alpine:init', () => {
         statusText: 'Starting camera…',
         _interval: null,
         _holdStart: null,
+        _faceapi: null,
 
         async init() {
             if (!navigator.mediaDevices?.getUserMedia) {
@@ -29,7 +28,15 @@ document.addEventListener('alpine:init', () => {
             }
 
             try {
-                await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+                // face-api.js (plus its tensorflow.js backend) is ~640KB - loaded
+                // lazily here, only once this component actually mounts, rather
+                // than as a static top-level import. A static import would make
+                // this whole module wait on that download before it can even
+                // register itself with Alpine, which can lose the race against
+                // Livewire's own script calling Alpine.start() first and make
+                // "selfieCapture" appear undefined.
+                this._faceapi = await import('face-api.js');
+                await this._faceapi.nets.tinyFaceDetector.loadFromUri('/models');
                 this.modelsLoaded = true;
             } catch (e) {
                 // Real-time face detection is a progressive enhancement - if the
@@ -57,6 +64,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         _startDetection() {
+            const faceapi = this._faceapi;
             const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
 
             this._interval = setInterval(async () => {
