@@ -36,6 +36,18 @@ document.addEventListener('alpine:init', () => {
                 // Livewire's own script calling Alpine.start() first and make
                 // "selfieCapture" appear undefined.
                 this._faceapi = await import('face-api.js');
+
+                // tf.ready() properly awaits backend selection, including the
+                // webgl -> cpu fallback on devices without WebGL support. This
+                // matters because tfjs's plain `tf.backend` getter (used
+                // internally by every tensor op, e.g. inside detectSingleFace)
+                // does NOT await that fallback - it can return before the cpu
+                // backend has actually finished initializing, which caused the
+                // webgl init failure to be silently retried from scratch on
+                // every detection tick (visible as the same "Initialization of
+                // backend webgl failed" error repeating forever and detection
+                // never progressing). Forcing it once here up front avoids that.
+                await this._faceapi.tf.ready();
                 await this._faceapi.nets.tinyFaceDetector.loadFromUri('/models');
                 this.modelsLoaded = true;
             } catch (e) {
