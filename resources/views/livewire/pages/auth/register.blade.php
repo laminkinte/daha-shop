@@ -201,9 +201,10 @@ new #[Layout('layouts.guest')] class extends Component
 }; ?>
 
 <div>
-    {{-- Loaded unconditionally (not from inside the step-4-only selfie capture
-         component) so the browser executes it as part of the normal page
-         load, before any Livewire step transition morphs that component in. --}}
+    {{-- Loaded unconditionally (not from inside the step-4-only camera/selfie
+         components) so the browser executes these as part of the normal page
+         load, before any Livewire step transition morphs those components in. --}}
+    <x-camera-capture-scripts />
     @vite('resources/js/selfie-capture.js')
 
     <div class="mb-6">
@@ -371,6 +372,7 @@ new #[Layout('layouts.guest')] class extends Component
                     <x-input-label for="business_address" :value="__('Business Address')" />
                     <textarea
                         wire:model="business_address"
+                        id="business_address"
                         class="block mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                         rows="3"></textarea>
                     <x-input-error :messages="$errors->get('business_address')" class="mt-2" />

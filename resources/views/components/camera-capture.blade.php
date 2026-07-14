@@ -1,67 +1,15 @@
 @props(['wireModel', 'label' => 'Capture Photo'])
 
-@once
-<script>
-    function cameraCaptureField(propertyName) {
-        return {
-            stream: null,
-            ready: false,
-            captured: false,
-            capturedSrc: null,
-            uploading: false,
-            error: null,
-            init() {
-                if (!navigator.mediaDevices?.getUserMedia) {
-                    this.error = 'Camera is not supported on this browser.';
-                    return;
-                }
-
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-                    .then((stream) => {
-                        this.stream = stream;
-                        this.$refs.video.srcObject = stream;
-                        this.ready = true;
-                    })
-                    .catch(() => {
-                        this.error = 'Camera access was denied. Please allow camera access and try again.';
-                    });
-            },
-            capture() {
-                const video = this.$refs.video;
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-
-                this.capturedSrc = canvas.toDataURL('image/jpeg', 0.9);
-                this.captured = true;
-                this.uploading = true;
-                this.error = null;
-
-                canvas.toBlob((blob) => {
-                    const file = new File([blob], propertyName + '.jpg', { type: 'image/jpeg' });
-                    this.$wire.upload(propertyName, file,
-                        () => { this.uploading = false; },
-                        () => { this.uploading = false; this.error = 'Upload failed, please try again.'; }
-                    );
-                }, 'image/jpeg', 0.9);
-
-                this.stream?.getTracks().forEach((track) => track.stop());
-            },
-            retake() {
-                this.captured = false;
-                this.capturedSrc = null;
-                this.error = null;
-                this.$wire.set(propertyName, null);
-                this.$nextTick(() => this.init());
-            },
-            destroy() {
-                this.stream?.getTracks().forEach((track) => track.stop());
-            },
-        };
-    }
-</script>
-@endonce
+{{--
+    cameraCaptureField's <script> definition is NOT inlined here on purpose.
+    This component only ever enters the DOM after a Livewire step transition
+    (an AJAX-driven morph, not a fresh page load) when it's used inside a
+    conditional step like register.blade.php's seller-only ID document step -
+    browsers do not reliably execute <script> tags inserted that way. The
+    function is defined once, unconditionally, from
+    resources/views/components/camera-capture-scripts.blade.php, included at
+    the top of whatever page uses this component.
+--}}
 
 <div x-data="cameraCaptureField('{{ $wireModel }}')" x-init="init()" class="rounded-xl border border-gray-200 bg-gray-50 p-3">
     <template x-if="!captured">
