@@ -201,6 +201,11 @@ new #[Layout('layouts.guest')] class extends Component
 }; ?>
 
 <div>
+    {{-- Loaded unconditionally (not from inside the step-4-only selfie capture
+         component) so the browser executes it as part of the normal page
+         load, before any Livewire step transition morphs that component in. --}}
+    @vite('resources/js/selfie-capture.js')
+
     <div class="mb-6">
         <h1 class="text-xl font-bold text-gray-900">Create your account</h1>
         <p class="text-sm text-gray-500 mt-1">Join Daha Shop as a customer, or start selling.</p>
@@ -432,9 +437,10 @@ new #[Layout('layouts.guest')] class extends Component
                     <x-input-label :value="__('Live Selfie')" />
                     <p class="text-xs text-gray-500 mb-2">
                         We ask for a live camera photo, not an upload, so an admin can confirm it matches your ID document.
+                        Center your face in the frame &mdash; it captures automatically once you're positioned and holding still.
                     </p>
 
-                    <x-camera-capture wireModel="selfie" label="Capture Selfie" />
+                    <x-selfie-capture wireModel="selfie" label="Capture Selfie" />
 
                     <x-input-error :messages="$errors->get('selfie')" class="mt-2" />
                     @if ($selfieClarityWarning)
