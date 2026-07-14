@@ -10,7 +10,17 @@
     discovers this element and calls x-init.
 --}}
 
-<div x-data="selfieCapture('{{ $wireModel }}')" x-init="init()" class="rounded-xl border border-gray-200 bg-gray-50 p-3">
+{{--
+    wire:ignore is required here: this subtree's video element has its
+    MediaStream attached imperatively via JS (srcObject isn't a plain HTML
+    attribute Livewire/Alpine's morph is aware of). Without wire:ignore, an
+    unrelated Livewire update elsewhere on the page (e.g. selecting the ID
+    document photo, which triggers its own round trip) can cause the morph to
+    recreate this video element, silently losing the live camera stream and
+    leaving the component stuck forever waiting for a video that will never
+    become ready again.
+--}}
+<div wire:ignore x-data="selfieCapture('{{ $wireModel }}')" x-init="init()" class="rounded-xl border border-gray-200 bg-gray-50 p-3">
     <template x-if="!captured">
         <div>
             <div class="relative rounded-lg overflow-hidden bg-gray-900 aspect-video">

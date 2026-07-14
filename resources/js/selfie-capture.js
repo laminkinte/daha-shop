@@ -4,6 +4,12 @@ const TOO_FAR_RATIO = 0.26;
 const TOO_CLOSE_RATIO = 0.8;
 const CENTER_TOLERANCE_X = 0.18;
 const CENTER_TOLERANCE_Y = 0.22;
+// KYC review only needs enough resolution to read a face, not the camera's
+// full native resolution - a phone front camera can otherwise produce a
+// multi-megabyte frame that's slow (or on a poor connection, effectively
+// stuck) to upload.
+const MAX_CAPTURE_DIMENSION = 800;
+const UPLOAD_TIMEOUT_MS = 20000;
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('selfieCapture', (propertyName) => ({
@@ -172,10 +178,11 @@ document.addEventListener('alpine:init', () => {
             }
 
             const video = this.$refs.video;
+            const scale = Math.min(1, MAX_CAPTURE_DIMENSION / Math.max(video.videoWidth, video.videoHeight));
             const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
+            canvas.width = Math.round(video.videoWidth * scale);
+            canvas.height = Math.round(video.videoHeight * scale);
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
 
             this.capturedSrc = canvas.toDataURL('image/jpeg', 0.9);
             this.captured = true;
@@ -184,9 +191,32 @@ document.addEventListener('alpine:init', () => {
 
             canvas.toBlob((blob) => {
                 const file = new File([blob], propertyName + '.jpg', { type: 'image/jpeg' });
+
+                // $wire.upload() has no built-in timeout - on a slow or
+                // dropped connection it can otherwise leave the UI stuck on
+                // "Uploading..." forever with no way to recover.
+                let settled = false;
+                const timeoutId = setTimeout(() => {
+                    if (settled) return;
+                    settled = true;
+                    this.uploading = false;
+                    this.error = 'Upload is taking too long. Check your connection and retake the photo.';
+                }, UPLOAD_TIMEOUT_MS);
+
                 this.$wire.upload(propertyName, file,
-                    () => { this.uploading = false; },
-                    () => { this.uploading = false; this.error = 'Upload failed, please try again.'; }
+                    () => {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timeoutId);
+                        this.uploading = false;
+                    },
+                    () => {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timeoutId);
+                        this.uploading = false;
+                        this.error = 'Upload failed, please try again.';
+                    }
                 );
             }, 'image/jpeg', 0.9);
 

@@ -424,9 +424,20 @@ new #[Layout('layouts.guest')] class extends Component
                             <div wire:loading wire:target="idDocument" class="text-xs text-gray-500 mt-1">Checking image clarity&hellip;</div>
                         </div>
 
-                        <div x-show="mode === 'camera'" x-cloak>
-                            <x-camera-capture wireModel="idDocument" label="Capture ID Document" />
-                        </div>
+                        {{--
+                            x-if (not x-show) on purpose: this only mounts (and
+                            requests camera access) once the user actually
+                            chooses "Use Camera", instead of opening a hidden
+                            camera stream on every page load regardless of
+                            which mode is selected - which also meant it was
+                            competing for the camera device with the selfie
+                            capture below at the same time.
+                        --}}
+                        <template x-if="mode === 'camera'">
+                            <div>
+                                <x-camera-capture wireModel="idDocument" label="Capture ID Document" />
+                            </div>
+                        </template>
                     </div>
 
                     <x-input-error :messages="$errors->get('idDocument')" class="mt-2" />

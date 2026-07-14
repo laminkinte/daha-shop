@@ -11,7 +11,15 @@
     the top of whatever page uses this component.
 --}}
 
-<div x-data="cameraCaptureField('{{ $wireModel }}')" x-init="init()" class="rounded-xl border border-gray-200 bg-gray-50 p-3">
+{{--
+    wire:ignore is required here for the same reason as selfie-capture.blade.php:
+    this subtree's video element has its MediaStream attached imperatively via
+    JS, which Livewire's morph doesn't know about. Without wire:ignore, an
+    unrelated Livewire update elsewhere on the page (e.g. this same wizard step
+    uploading the selfie) can cause the morph to recreate this video element
+    and silently lose the live camera stream.
+--}}
+<div wire:ignore x-data="cameraCaptureField('{{ $wireModel }}')" x-init="init()" class="rounded-xl border border-gray-200 bg-gray-50 p-3">
     <template x-if="!captured">
         <div>
             <div class="relative rounded-lg overflow-hidden bg-gray-900 aspect-video">
