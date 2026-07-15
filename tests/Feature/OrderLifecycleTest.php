@@ -10,6 +10,7 @@ use App\Enums\ReconciliationStatus;
 use App\Enums\UserRole;
 use App\Enums\VendorOrderStatus;
 use App\Enums\VendorStatus;
+use App\Jobs\SendOrderStatusSms;
 use App\Jobs\SendOtpSms;
 use App\Models\Address;
 use App\Models\Cart;
@@ -28,10 +29,12 @@ use App\Services\OtpService;
 use App\Services\PayoutService;
 use App\Services\ReconciliationService;
 use App\Services\VendorOrderService;
+use App\Notifications\InAppAlert;
 use Database\Seeders\NigeriaGeographySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class OrderLifecycleTest extends TestCase
@@ -94,8 +97,9 @@ class OrderLifecycleTest extends TestCase
         CartItem::create(['cart_id' => $cart->id, 'product_id' => $product->id, 'quantity' => 2]);
 
         // --- Checkout ---
-        Bus::fake([SendOtpSms::class]);
+        Bus::fake([SendOtpSms::class, SendOrderStatusSms::class]);
         Mail::fake();
+        Notification::fake();
 
         $order = app(CheckoutService::class)->placeOrder($customer, $cart->fresh('items'), $address);
 
@@ -150,6 +154,7 @@ class OrderLifecycleTest extends TestCase
 
         $vendorOrderService->accept($vendorOrder);
         Mail::assertQueued(\App\Mail\VendorOrderAcceptedMail::class, fn ($mail) => $mail->hasTo($customer->email) && $mail->vendorOrder->is($vendorOrder));
+        Notification::assertSentTo($customer, InAppAlert::class, fn ($n) => $n->title === 'Order being prepared');
 
         $vendorOrderService->pack($vendorOrder);
         $vendorOrderService->assignAgent($vendorOrder, $agent);
@@ -160,6 +165,7 @@ class OrderLifecycleTest extends TestCase
         $this->assertSame($agent->id, $vendorOrder->delivery_agent_id);
 
         Mail::assertQueued(\App\Mail\AgentAssignedToDeliveryMail::class, fn ($mail) => $mail->hasTo($agentUser->email) && $mail->vendorOrder->is($vendorOrder));
+        Notification::assertSentTo($agentUser, InAppAlert::class, fn ($n) => $n->title === 'New delivery assigned');
 
         // --- Delivery + cash collection (delivery fee already paid via OPay, so only items are cash) ---
         $reconciliation = $vendorOrderService->markDelivered($vendorOrder, $vendorOrder->cashDueAtDelivery());
@@ -172,6 +178,7 @@ class OrderLifecycleTest extends TestCase
         $this->assertSame($vendorOrder->cashDueAtDelivery(), $order->cod_amount_collected);
 
         Mail::assertQueued(\App\Mail\CashCollectedMail::class, fn ($mail) => $mail->hasTo($vendorUser->email) && $mail->vendorOrder->is($vendorOrder));
+        Notification::assertSentTo($vendorUser, InAppAlert::class, fn ($n) => $n->title === 'Cash collected');
 
         // --- Cash reconciliation / remittance ---
         app(ReconciliationService::class)->remit($reconciliation, $reconciliation->amount_collected);
@@ -179,6 +186,7 @@ class OrderLifecycleTest extends TestCase
         $this->assertSame(ReconciliationStatus::Remitted, $reconciliation->status);
 
         Mail::assertQueued(\App\Mail\CashRemittedMail::class, fn ($mail) => $mail->hasTo($vendorUser->email) && $mail->reconciliation->is($reconciliation));
+        Notification::assertSentTo($vendorUser, InAppAlert::class, fn ($n) => $n->title === 'Cash remitted');
 
         // --- Vendor payout ---
         $payout = app(PayoutService::class)->generateForVendor($vendor, now()->subDay(), now()->addDay());
@@ -191,6 +199,13 @@ class OrderLifecycleTest extends TestCase
         $this->assertNotNull($payout->paid_at);
 
         Mail::assertQueued(\App\Mail\VendorPayoutPaidMail::class, fn ($mail) => $mail->hasTo($vendorUser->email) && $mail->payout->is($payout));
+        Notification::assertSentTo($vendorUser, InAppAlert::class, fn ($n) => $n->title === 'Payout paid');
+
+        // Only "order confirmed" (the one customer-facing, definitive event
+        // in this successful lifecycle) should have cost an SMS - vendor
+        // accepted, cash collected, cash remitted, payout paid, and agent
+        // assigned all moved to email + in-app only.
+        Bus::assertDispatchedTimes(SendOrderStatusSms::class, 1);
     }
 
     public function test_delivery_failure_restocks_and_cancels_after_max_attempts(): void

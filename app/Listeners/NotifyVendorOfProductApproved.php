@@ -3,8 +3,8 @@
 namespace App\Listeners;
 
 use App\Events\ProductApproved;
-use App\Jobs\SendOrderStatusSms;
 use App\Mail\ProductApprovedMail;
+use App\Notifications\InAppAlert;
 use Illuminate\Support\Facades\Mail;
 
 class NotifyVendorOfProductApproved
@@ -14,10 +14,11 @@ class NotifyVendorOfProductApproved
         $product = $event->product;
         $vendor = $product->vendor;
 
-        SendOrderStatusSms::dispatch(
-            $vendor->business_phone,
-            "Daha Shop: your product \"{$product->name}\" was approved and is now live."
-        );
+        $vendor->user->notify(new InAppAlert(
+            title: 'Product approved',
+            message: "Your product \"{$product->name}\" was approved and is now live.",
+            url: route('storefront.product', $product),
+        ));
 
         if ($vendor->user->hasRealEmail()) {
             Mail::to($vendor->user->email)->queue(new ProductApprovedMail($product));

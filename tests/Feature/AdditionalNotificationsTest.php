@@ -8,6 +8,7 @@ use App\Enums\SubscriptionPlan;
 use App\Enums\SubscriptionStatus;
 use App\Enums\VendorOrderStatus;
 use App\Enums\VendorStatus;
+use App\Jobs\SendOrderStatusSms;
 use App\Jobs\SendOtpSms;
 use App\Livewire\Admin\ProductApprovals;
 use App\Mail\OrderCancelledMail;
@@ -28,6 +29,7 @@ use App\Models\State;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\VendorSubscription;
+use App\Notifications\InAppAlert;
 use App\Services\CheckoutService;
 use App\Services\OrderService;
 use App\Services\SubscriptionService;
@@ -36,6 +38,7 @@ use Database\Seeders\NigeriaGeographySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -83,7 +86,7 @@ class AdditionalNotificationsTest extends TestCase
         $cart = Cart::create(['user_id' => $customer->id]);
         CartItem::create(['cart_id' => $cart->id, 'product_id' => $product->id, 'quantity' => 1]);
 
-        Bus::fake([SendOtpSms::class]);
+        Bus::fake([SendOtpSms::class, SendOrderStatusSms::class]);
         $order = app(CheckoutService::class)->placeOrder($customer, $cart->fresh('items'), $address);
 
         return [$order, $customer];
@@ -92,6 +95,8 @@ class AdditionalNotificationsTest extends TestCase
     public function test_admin_approving_a_product_notifies_the_vendor(): void
     {
         Mail::fake();
+        Notification::fake();
+        Bus::fake([SendOrderStatusSms::class]);
 
         $vendor = $this->makeVendor();
         $admin = User::factory()->admin()->create();
@@ -110,11 +115,15 @@ class AdditionalNotificationsTest extends TestCase
         Livewire::actingAs($admin)->test(ProductApprovals::class)->call('approve', $product->id);
 
         Mail::assertQueued(ProductApprovedMail::class, fn ($mail) => $mail->hasTo($vendor->user->email) && $mail->product->is($product));
+        Notification::assertSentTo($vendor->user, InAppAlert::class, fn ($n) => $n->title === 'Product approved');
+        Bus::assertNotDispatched(SendOrderStatusSms::class);
     }
 
     public function test_admin_rejecting_a_product_notifies_the_vendor(): void
     {
         Mail::fake();
+        Notification::fake();
+        Bus::fake([SendOrderStatusSms::class]);
 
         $vendor = $this->makeVendor();
         $admin = User::factory()->admin()->create();
@@ -136,6 +145,8 @@ class AdditionalNotificationsTest extends TestCase
             ->call('reject', $product->id);
 
         Mail::assertQueued(ProductRejectedMail::class, fn ($mail) => $mail->hasTo($vendor->user->email) && $mail->product->is($product));
+        Notification::assertSentTo($vendor->user, InAppAlert::class, fn ($n) => $n->title === 'Product rejected');
+        Bus::assertNotDispatched(SendOrderStatusSms::class);
     }
 
     public function test_rejecting_an_order_notifies_the_customer(): void
@@ -161,6 +172,10 @@ class AdditionalNotificationsTest extends TestCase
 
         Mail::assertQueued(OrderRejectedMail::class, fn ($mail) => $mail->hasTo($customer->email) && $mail->order->is($order));
         $this->assertSame(5, $product->fresh()->stock, 'Rejecting must restock.');
+
+        // Order rejected is a definitive outcome the customer needs to know
+        // about even if not checking email - this one stays on SMS.
+        Bus::assertDispatchedTimes(SendOrderStatusSms::class, 1);
     }
 
     public function test_cancelling_an_order_notifies_the_customer(): void
@@ -185,12 +200,14 @@ class AdditionalNotificationsTest extends TestCase
         app(OrderService::class)->cancel($order, 'Customer requested cancellation');
 
         Mail::assertQueued(OrderCancelledMail::class, fn ($mail) => $mail->hasTo($customer->email) && $mail->order->is($order));
+        Bus::assertDispatchedTimes(SendOrderStatusSms::class, 1);
     }
 
     public function test_vendor_rejecting_their_leg_of_an_order_notifies_the_customer(): void
     {
         $this->seed(NigeriaGeographySeeder::class);
         Mail::fake();
+        Notification::fake();
 
         $vendor = $this->makeVendor('4');
         $category = Category::create(['name' => 'Phones', 'slug' => 'phones']);
@@ -212,11 +229,18 @@ class AdditionalNotificationsTest extends TestCase
         $vendorOrder->refresh();
         $this->assertSame(VendorOrderStatus::Rejected, $vendorOrder->status);
         Mail::assertQueued(VendorOrderRejectedMail::class, fn ($mail) => $mail->hasTo($customer->email) && $mail->vendorOrder->is($vendorOrder));
+        Notification::assertSentTo($customer, InAppAlert::class, fn ($n) => $n->title === 'Part of your order could not be fulfilled');
+
+        // Only one item affected (and refunded), less severe than the whole
+        // order being rejected/cancelled - this one moved off SMS.
+        Bus::assertNotDispatched(SendOrderStatusSms::class);
     }
 
     public function test_activating_a_subscription_notifies_the_vendor(): void
     {
         Mail::fake();
+        Notification::fake();
+        Bus::fake([SendOrderStatusSms::class]);
 
         $vendor = $this->makeVendor('5');
 
@@ -234,11 +258,15 @@ class AdditionalNotificationsTest extends TestCase
         $subscription->refresh();
         $this->assertSame(SubscriptionStatus::Active, $subscription->status);
         Mail::assertQueued(SubscriptionActivatedMail::class, fn ($mail) => $mail->hasTo($vendor->user->email) && $mail->subscription->is($subscription));
+        Notification::assertSentTo($vendor->user, InAppAlert::class, fn ($n) => $n->title === 'Subscription active');
+        Bus::assertNotDispatched(SendOrderStatusSms::class);
     }
 
     public function test_expire_command_notifies_vendors_whose_subscription_lapsed(): void
     {
         Mail::fake();
+        Notification::fake();
+        Bus::fake([SendOrderStatusSms::class]);
 
         $vendor = $this->makeVendor('6');
 
@@ -259,5 +287,7 @@ class AdditionalNotificationsTest extends TestCase
         $subscription->refresh();
         $this->assertSame(SubscriptionStatus::Expired, $subscription->status);
         Mail::assertQueued(SubscriptionExpiredMail::class, fn ($mail) => $mail->hasTo($vendor->user->email) && $mail->subscription->is($subscription));
+        Notification::assertSentTo($vendor->user, InAppAlert::class, fn ($n) => $n->title === 'Subscription expired');
+        Bus::assertNotDispatched(SendOrderStatusSms::class);
     }
 }

@@ -3,8 +3,8 @@
 namespace App\Listeners;
 
 use App\Events\AgentAssignedToDelivery;
-use App\Jobs\SendOrderStatusSms;
 use App\Mail\AgentAssignedToDeliveryMail;
+use App\Notifications\InAppAlert;
 use Illuminate\Support\Facades\Mail;
 
 class NotifyAgentOfDeliveryAssignment
@@ -14,10 +14,11 @@ class NotifyAgentOfDeliveryAssignment
         $vendorOrder = $event->vendorOrder;
         $agent = $vendorOrder->deliveryAgent;
 
-        SendOrderStatusSms::dispatch(
-            $agent->user->phone,
-            "Daha Shop: you've been assigned to deliver order #{$vendorOrder->order->order_number} from {$vendorOrder->vendor->business_name}."
-        );
+        $agent->user->notify(new InAppAlert(
+            title: 'New delivery assigned',
+            message: "You've been assigned to deliver order #{$vendorOrder->order->order_number} from {$vendorOrder->vendor->business_name}.",
+            url: route('agent.deliveries.show', $vendorOrder->id),
+        ));
 
         if ($agent->user->hasRealEmail()) {
             Mail::to($agent->user->email)->queue(new AgentAssignedToDeliveryMail($vendorOrder));

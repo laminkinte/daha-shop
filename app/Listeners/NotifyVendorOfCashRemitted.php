@@ -3,8 +3,8 @@
 namespace App\Listeners;
 
 use App\Events\CashRemitted;
-use App\Jobs\SendOrderStatusSms;
 use App\Mail\CashRemittedMail;
+use App\Notifications\InAppAlert;
 use Illuminate\Support\Facades\Mail;
 
 class NotifyVendorOfCashRemitted
@@ -14,10 +14,11 @@ class NotifyVendorOfCashRemitted
         $vendorOrder = $event->reconciliation->vendorOrder;
         $vendor = $vendorOrder->vendor;
 
-        SendOrderStatusSms::dispatch(
-            $vendor->business_phone,
-            "Daha Shop: cash for order #{$vendorOrder->order->order_number} has been remitted and reconciled. It will be included in your next payout."
-        );
+        $vendor->user->notify(new InAppAlert(
+            title: 'Cash remitted',
+            message: "Cash for order #{$vendorOrder->order->order_number} has been remitted and reconciled. It will be included in your next payout.",
+            url: route('vendor.orders'),
+        ));
 
         if ($vendor->user->hasRealEmail()) {
             Mail::to($vendor->user->email)->queue(new CashRemittedMail($event->reconciliation));

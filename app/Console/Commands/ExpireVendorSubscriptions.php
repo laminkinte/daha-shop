@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Enums\SubscriptionStatus;
-use App\Jobs\SendOrderStatusSms;
 use App\Mail\SubscriptionExpiredMail;
 use App\Models\VendorSubscription;
+use App\Notifications\InAppAlert;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
@@ -40,10 +40,11 @@ class ExpireVendorSubscriptions extends Command
 
             $vendor = $subscription->vendor;
 
-            SendOrderStatusSms::dispatch(
-                $vendor->business_phone,
-                "Daha Shop: your subscription expired on {$subscription->expires_at->format('M j, Y')}. Renew it to keep posting products."
-            );
+            $vendor->user->notify(new InAppAlert(
+                title: 'Subscription expired',
+                message: "Your subscription expired on {$subscription->expires_at->format('M j, Y')}. Renew it to keep posting products.",
+                url: route('vendor.subscription'),
+            ));
 
             if ($vendor->user->hasRealEmail()) {
                 Mail::to($vendor->user->email)->queue(new SubscriptionExpiredMail($subscription));

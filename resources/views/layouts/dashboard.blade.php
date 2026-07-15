@@ -150,6 +150,7 @@
                     <h1 class="text-lg font-semibold text-gray-800">{{ $header ?? '' }}</h1>
                 </div>
                 <div class="flex items-center gap-2">
+                    <livewire:notification-bell />
                     <span class="text-sm text-gray-500 hidden sm:inline">{{ auth()->user()->name ?? '' }}</span>
                     <div class="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-semibold text-white">
                         {{ Str::of(auth()->user()->name ?? '?')->substr(0, 1)->upper() }}
