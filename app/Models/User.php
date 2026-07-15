@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -120,5 +120,16 @@ class User extends Authenticatable
     public function hasRealEmail(): bool
     {
         return $this->email && ! $this->uses_pin;
+    }
+
+    /**
+     * Phone/PIN accounts can never receive a verification email (their
+     * address is a synthetic placeholder) - they're verified via phone OTP
+     * instead (see isPhoneVerified()), so they're always considered
+     * "email verified" for the purposes of the `verified` middleware gate.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->uses_pin || $this->email_verified_at !== null;
     }
 }

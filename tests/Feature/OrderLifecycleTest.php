@@ -159,6 +159,8 @@ class OrderLifecycleTest extends TestCase
         $this->assertSame(VendorOrderStatus::OutForDelivery, $vendorOrder->status);
         $this->assertSame($agent->id, $vendorOrder->delivery_agent_id);
 
+        Mail::assertQueued(\App\Mail\AgentAssignedToDeliveryMail::class, fn ($mail) => $mail->hasTo($agentUser->email) && $mail->vendorOrder->is($vendorOrder));
+
         // --- Delivery + cash collection (delivery fee already paid via OPay, so only items are cash) ---
         $reconciliation = $vendorOrderService->markDelivered($vendorOrder, $vendorOrder->cashDueAtDelivery());
 
@@ -175,6 +177,8 @@ class OrderLifecycleTest extends TestCase
         app(ReconciliationService::class)->remit($reconciliation, $reconciliation->amount_collected);
         $reconciliation->refresh();
         $this->assertSame(ReconciliationStatus::Remitted, $reconciliation->status);
+
+        Mail::assertQueued(\App\Mail\CashRemittedMail::class, fn ($mail) => $mail->hasTo($vendorUser->email) && $mail->reconciliation->is($reconciliation));
 
         // --- Vendor payout ---
         $payout = app(PayoutService::class)->generateForVendor($vendor, now()->subDay(), now()->addDay());

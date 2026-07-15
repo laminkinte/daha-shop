@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PaymentGateway;
 use App\Enums\SubscriptionPlan;
 use App\Enums\SubscriptionStatus;
+use App\Events\SubscriptionActivated;
 use App\Models\Vendor;
 use App\Models\VendorSubscription;
 use Illuminate\Support\Str;
@@ -112,5 +113,7 @@ class SubscriptionService
             'starts_at' => now(),
             'expires_at' => $subscription->plan->extend($startsFrom),
         ]);
+
+        SubscriptionActivated::dispatch($subscription->fresh());
     }
 }

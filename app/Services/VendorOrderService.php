@@ -6,9 +6,11 @@ use App\Enums\DeliveryFailureReason;
 use App\Enums\OrderStatus;
 use App\Enums\ReconciliationStatus;
 use App\Enums\VendorOrderStatus;
+use App\Events\AgentAssignedToDelivery;
 use App\Events\CashCollected;
 use App\Events\DeliveryFailed;
 use App\Events\VendorOrderAccepted;
+use App\Events\VendorOrderRejected;
 use App\Models\CashReconciliation;
 use App\Models\DeliveryAgent;
 use App\Models\VendorOrder;
@@ -34,6 +36,8 @@ class VendorOrderService
 
         $this->restock($vendorOrder);
         $this->finalizeOrderIfResolved($vendorOrder);
+
+        VendorOrderRejected::dispatch($vendorOrder->fresh());
     }
 
     public function pack(VendorOrder $vendorOrder): void
@@ -50,6 +54,8 @@ class VendorOrderService
             'status' => VendorOrderStatus::AssignedToAgent,
             'delivery_agent_id' => $agent->id,
         ]);
+
+        AgentAssignedToDelivery::dispatch($vendorOrder->fresh());
     }
 
     public function markOutForDelivery(VendorOrder $vendorOrder): void

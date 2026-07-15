@@ -3,6 +3,8 @@
 namespace App\Livewire\Admin;
 
 use App\Enums\ProductStatus;
+use App\Events\ProductApproved;
+use App\Events\ProductRejected;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -20,12 +22,16 @@ class ProductApprovals extends Component
 
     public function approve(int $productId): void
     {
-        Product::whereKey($productId)->update([
+        $product = Product::findOrFail($productId);
+
+        $product->update([
             'status' => ProductStatus::Published,
             'rejection_reason' => null,
             'reviewed_by' => Auth::id(),
             'reviewed_at' => now(),
         ]);
+
+        ProductApproved::dispatch($product->fresh());
     }
 
     public function reject(int $productId): void
@@ -38,7 +44,9 @@ class ProductApprovals extends Component
             'rejectionReason.'.$productId.'.required' => 'Please give the vendor a reason for rejecting this product.',
         ]);
 
-        Product::whereKey($productId)->update([
+        $product = Product::findOrFail($productId);
+
+        $product->update([
             'status' => ProductStatus::Rejected,
             'rejection_reason' => $reason,
             'reviewed_by' => Auth::id(),
@@ -46,6 +54,8 @@ class ProductApprovals extends Component
         ]);
 
         unset($this->rejectionReason[$productId]);
+
+        ProductRejected::dispatch($product->fresh());
     }
 
     public function render()

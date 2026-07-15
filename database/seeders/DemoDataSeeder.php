@@ -23,6 +23,16 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
+        // These accounts have fake but real-looking @dahashop.ng addresses -
+        // if this ever ran somewhere with live SMTP configured (a staging
+        // box mirroring production config, say), every order/vendor
+        // notification email this app sends would genuinely attempt
+        // delivery to those non-existent mailboxes. Demo data belongs in
+        // local/testing only.
+        if (! app()->environment(['local', 'testing'])) {
+            throw new \RuntimeException('DemoDataSeeder creates fake accounts with placeholder emails and must not run outside local/testing.');
+        }
+
         $lagos = State::where('name', 'Lagos')->firstOrFail();
         $ikeja = $lagos->lgas()->where('name', 'Ikeja')->firstOrFail();
         $surulere = $lagos->lgas()->where('name', 'Surulere')->firstOrFail();

@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Enums\ConfirmationStatus;
 use App\Enums\OrderStatus;
+use App\Events\OrderCancelled;
 use App\Events\OrderConfirmed;
+use App\Events\OrderRejected;
 use App\Models\Order;
 
 class OrderService
@@ -50,6 +52,8 @@ class OrderService
         ]);
 
         $this->restock($order);
+
+        OrderRejected::dispatch($order->fresh());
     }
 
     public function cancel(Order $order, string $reason): void
@@ -61,6 +65,8 @@ class OrderService
         ]);
 
         $this->restock($order);
+
+        OrderCancelled::dispatch($order->fresh());
     }
 
     private function restock(Order $order): void
