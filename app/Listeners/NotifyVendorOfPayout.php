@@ -4,6 +4,8 @@ namespace App\Listeners;
 
 use App\Events\VendorPayoutProcessed;
 use App\Jobs\SendOrderStatusSms;
+use App\Mail\VendorPayoutPaidMail;
+use Illuminate\Support\Facades\Mail;
 
 class NotifyVendorOfPayout
 {
@@ -16,5 +18,9 @@ class NotifyVendorOfPayout
             $payout->vendor->business_phone,
             "Your Daha Shop payout of ₦{$nairaAmount} for {$payout->period_start->format('M j')}–{$payout->period_end->format('M j')} has been paid."
         );
+
+        if ($payout->vendor->user->hasRealEmail()) {
+            Mail::to($payout->vendor->user->email)->queue(new VendorPayoutPaidMail($payout));
+        }
     }
 }

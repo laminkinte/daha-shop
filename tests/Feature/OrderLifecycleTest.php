@@ -31,6 +31,7 @@ use App\Services\VendorOrderService;
 use Database\Seeders\NigeriaGeographySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class OrderLifecycleTest extends TestCase
@@ -94,6 +95,7 @@ class OrderLifecycleTest extends TestCase
 
         // --- Checkout ---
         Bus::fake([SendOtpSms::class]);
+        Mail::fake();
 
         $order = app(CheckoutService::class)->placeOrder($customer, $cart->fresh('items'), $address);
 
@@ -140,11 +142,15 @@ class OrderLifecycleTest extends TestCase
         $this->assertSame(OrderStatus::Processing, $order->status);
         $this->assertSame(ConfirmationStatus::Confirmed, $order->confirmation_status);
 
+        Mail::assertQueued(\App\Mail\OrderConfirmedMail::class, fn ($mail) => $mail->hasTo($customer->email) && $mail->order->is($order));
+
         // --- Vendor fulfils the order ---
         $vendorOrderService = app(VendorOrderService::class);
         $vendorOrder = $order->vendorOrders()->first();
 
         $vendorOrderService->accept($vendorOrder);
+        Mail::assertQueued(\App\Mail\VendorOrderAcceptedMail::class, fn ($mail) => $mail->hasTo($customer->email) && $mail->vendorOrder->is($vendorOrder));
+
         $vendorOrderService->pack($vendorOrder);
         $vendorOrderService->assignAgent($vendorOrder, $agent);
         $vendorOrderService->markOutForDelivery($vendorOrder);
@@ -163,6 +169,8 @@ class OrderLifecycleTest extends TestCase
         $this->assertSame(ReconciliationStatus::Collected, $reconciliation->status);
         $this->assertSame($vendorOrder->cashDueAtDelivery(), $order->cod_amount_collected);
 
+        Mail::assertQueued(\App\Mail\CashCollectedMail::class, fn ($mail) => $mail->hasTo($vendorUser->email) && $mail->vendorOrder->is($vendorOrder));
+
         // --- Cash reconciliation / remittance ---
         app(ReconciliationService::class)->remit($reconciliation, $reconciliation->amount_collected);
         $reconciliation->refresh();
@@ -177,6 +185,8 @@ class OrderLifecycleTest extends TestCase
         $payout->refresh();
         $this->assertSame(PayoutStatus::Paid, $payout->status);
         $this->assertNotNull($payout->paid_at);
+
+        Mail::assertQueued(\App\Mail\VendorPayoutPaidMail::class, fn ($mail) => $mail->hasTo($vendorUser->email) && $mail->payout->is($payout));
     }
 
     public function test_delivery_failure_restocks_and_cancels_after_max_attempts(): void
@@ -226,6 +236,7 @@ class OrderLifecycleTest extends TestCase
         CartItem::create(['cart_id' => $cart->id, 'product_id' => $product->id, 'quantity' => 1]);
 
         Bus::fake([SendOtpSms::class]);
+        Mail::fake();
         $order = app(CheckoutService::class)->placeOrder($customer, $cart->fresh('items'), $address);
         $this->assertSame(4, $product->fresh()->stock);
 
@@ -237,6 +248,8 @@ class OrderLifecycleTest extends TestCase
         $this->assertSame(1, $vendorOrder->delivery_attempts);
         $this->assertSame(VendorOrderStatus::Packed, $vendorOrder->status);
         $this->assertSame(4, $product->fresh()->stock, 'Stock should not be restored before max attempts.');
+
+        Mail::assertQueued(\App\Mail\DeliveryFailedMail::class, fn ($mail) => $mail->hasTo($customer->email) && $mail->vendorOrder->is($vendorOrder));
 
         $vendorOrderService->markFailed($vendorOrder, \App\Enums\DeliveryFailureReason::NoCash);
         $vendorOrder->refresh();

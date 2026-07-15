@@ -75,10 +75,7 @@ class VendorApprovals extends Component
             );
         }
 
-        // Phone/PIN accounts get a synthetic @phone.dahashop.internal email
-        // (see register.blade.php) that isn't real - only email accounts
-        // that registered with an actual address get this notification too.
-        if ($vendor->user->email && ! $vendor->user->uses_pin) {
+        if ($vendor->user->hasRealEmail()) {
             Mail::to($vendor->user->email)->queue(
                 new VendorDocumentRetakeRequested($vendor->business_name, $label, $reason)
             );

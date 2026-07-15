@@ -111,4 +111,14 @@ class User extends Authenticatable
     {
         return $this->phone_verified_at !== null;
     }
+
+    /**
+     * Phone/PIN accounts store a synthetic `xxx@phone.dahashop.internal`
+     * address in the email column (see register.blade.php) since they never
+     * gave a real one - that address must never actually be emailed.
+     */
+    public function hasRealEmail(): bool
+    {
+        return $this->email && ! $this->uses_pin;
+    }
 }
