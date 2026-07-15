@@ -10,7 +10,7 @@
 
     <div class="space-y-4">
         @forelse ($products as $product)
-            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex gap-4">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col sm:flex-row gap-4">
                 <div class="h-20 w-20 shrink-0 bg-gray-100 rounded-lg flex items-center justify-center text-gray-300 overflow-hidden">
                     @if ($product->images->first())
                         <img src="{{ $product->images->first()->url() }}" class="object-cover w-full h-full">
@@ -50,10 +50,12 @@
                     @endif
 
                     @if ($product->status->value === 'pending_review')
-                        <div class="mt-3 flex items-start gap-2">
-                            <input type="text" wire:model="rejectionReason.{{ $product->id }}" placeholder="Reason if rejecting (required to reject)" class="flex-1 text-xs rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
-                            <button wire:click="approve({{ $product->id }})" class="text-xs bg-green-700 hover:bg-green-800 text-white px-3 py-2 rounded-lg whitespace-nowrap transition-colors">Approve</button>
-                            <button wire:click="reject({{ $product->id }})" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg whitespace-nowrap transition-colors">Reject</button>
+                        <div class="mt-3 flex flex-col sm:flex-row sm:items-start gap-2">
+                            <input type="text" wire:model="rejectionReason.{{ $product->id }}" placeholder="Reason if rejecting (required to reject)" class="w-full sm:flex-1 text-xs rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                            <div class="flex gap-2">
+                                <button wire:click="approve({{ $product->id }})" class="flex-1 sm:flex-none text-xs bg-green-700 hover:bg-green-800 text-white px-3 py-2 rounded-lg whitespace-nowrap transition-colors">Approve</button>
+                                <button wire:click="reject({{ $product->id }})" class="flex-1 sm:flex-none text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg whitespace-nowrap transition-colors">Reject</button>
+                            </div>
                         </div>
                         @error('rejectionReason.'.$product->id) <span class="text-xs text-red-600 block mt-1">{{ $message }}</span> @enderror
                     @endif

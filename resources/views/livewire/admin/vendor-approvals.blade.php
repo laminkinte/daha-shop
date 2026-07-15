@@ -38,9 +38,9 @@
                                     Retake requested: {{ $vendor->id_document_rejection_reason }}
                                 </div>
                             @elseif ($vendor->id_document_path)
-                                <div class="mt-1.5 flex items-start gap-1.5">
-                                    <input type="text" wire:model="rejectionReason.{{ $vendor->id }}.id" placeholder="Reason for retake" class="flex-1 text-xs rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
-                                    <button wire:click="requestRetake({{ $vendor->id }}, 'id')" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors">Request Retake</button>
+                                <div class="mt-1.5 space-y-1.5">
+                                    <input type="text" wire:model="rejectionReason.{{ $vendor->id }}.id" placeholder="Reason for retake" class="w-full text-xs rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                                    <button wire:click="requestRetake({{ $vendor->id }}, 'id')" class="w-full text-xs bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-lg transition-colors">Request Retake</button>
                                 </div>
                                 @error('rejectionReason.'.$vendor->id.'.id') <span class="text-xs text-red-600 block mt-1">{{ $message }}</span> @enderror
                             @endif
@@ -60,9 +60,9 @@
                                     Retake requested: {{ $vendor->selfie_rejection_reason }}
                                 </div>
                             @elseif ($vendor->selfie_path)
-                                <div class="mt-1.5 flex items-start gap-1.5">
-                                    <input type="text" wire:model="rejectionReason.{{ $vendor->id }}.selfie" placeholder="Reason for retake" class="flex-1 text-xs rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
-                                    <button wire:click="requestRetake({{ $vendor->id }}, 'selfie')" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors">Request Retake</button>
+                                <div class="mt-1.5 space-y-1.5">
+                                    <input type="text" wire:model="rejectionReason.{{ $vendor->id }}.selfie" placeholder="Reason for retake" class="w-full text-xs rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                                    <button wire:click="requestRetake({{ $vendor->id }}, 'selfie')" class="w-full text-xs bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-lg transition-colors">Request Retake</button>
                                 </div>
                                 @error('rejectionReason.'.$vendor->id.'.selfie') <span class="text-xs text-red-600 block mt-1">{{ $message }}</span> @enderror
                             @endif
