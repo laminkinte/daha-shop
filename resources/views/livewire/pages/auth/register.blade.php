@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Enums\VendorStatus;
+use App\Mail\WelcomeMail;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Services\ImageClarityChecker;
@@ -9,6 +10,7 @@ use App\Services\OtpService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
@@ -191,8 +193,17 @@ new #[Layout('layouts.guest')] class extends Component
 
         // Every new account is "pending" until the phone number is confirmed -
         // the account works immediately, but a verification prompt follows
-        // the user around the app until this OTP is entered.
+        // the user around the app until this OTP is entered. This SMS goes
+        // out regardless of registration method, since phone is always
+        // collected and verified either way.
         $otpService->generate($user->phone, 'phone_verification');
+
+        // Accounts that registered with a real email (not a phone/PIN
+        // account's synthetic placeholder) also get a welcome email - phone/
+        // PIN accounts only ever get the SMS above.
+        if ($user->hasRealEmail()) {
+            Mail::to($user->email)->queue(new WelcomeMail($user));
+        }
 
         Auth::login($user);
 

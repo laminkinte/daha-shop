@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Jobs\SendOtpSms;
 use App\Livewire\PhoneVerificationPrompt;
+use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Livewire\Volt\Volt;
 use Tests\TestCase;
@@ -18,6 +20,7 @@ class PhoneRegistrationTest extends TestCase
     public function test_registering_with_phone_and_pin_creates_a_pending_unverified_account(): void
     {
         Bus::fake([SendOtpSms::class]);
+        Mail::fake();
 
         Volt::test('pages.auth.register')
             ->set('registrationMethod', 'phone')
@@ -36,6 +39,7 @@ class PhoneRegistrationTest extends TestCase
         $this->assertStringEndsWith('@phone.dahashop.internal', $user->email);
 
         Bus::assertDispatched(SendOtpSms::class, fn (SendOtpSms $job) => $job->phone === '+2348055501234');
+        Mail::assertNothingQueued();
     }
 
     public function test_pin_must_be_exactly_four_digits_and_confirmed(): void
@@ -55,6 +59,7 @@ class PhoneRegistrationTest extends TestCase
     public function test_email_registration_also_creates_a_pending_unverified_account(): void
     {
         Bus::fake([SendOtpSms::class]);
+        Mail::fake();
 
         Volt::test('pages.auth.register')
             ->set('registrationMethod', 'email')
@@ -72,7 +77,10 @@ class PhoneRegistrationTest extends TestCase
         $this->assertFalse($user->uses_pin);
         $this->assertNull($user->phone_verified_at);
 
+        // Email-registered accounts get both channels: the phone-verification
+        // SMS (same as everyone) plus a welcome email.
         Bus::assertDispatched(SendOtpSms::class);
+        Mail::assertQueued(WelcomeMail::class, fn ($mail) => $mail->hasTo('emailuser@example.com') && $mail->user->is($user));
     }
 
     public function test_verification_prompt_shows_for_unverified_users_and_hides_once_verified(): void
