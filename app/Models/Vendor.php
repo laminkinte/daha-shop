@@ -14,6 +14,7 @@ class Vendor extends Model
         'state_id', 'lga_id', 'cac_number', 'status',
         'bank_name', 'bank_account_number', 'bank_account_name', 'approved_at',
         'id_document_type', 'id_document_path', 'selfie_path',
+        'id_document_rejection_reason', 'selfie_rejection_reason', 'reviewed_by', 'reviewed_at',
     ];
 
     protected function casts(): array
@@ -21,6 +22,7 @@ class Vendor extends Model
         return [
             'status' => VendorStatus::class,
             'approved_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -81,5 +83,15 @@ class Vendor extends Model
     public function isApproved(): bool
     {
         return $this->status === VendorStatus::Approved;
+    }
+
+    public function needsIdDocumentRetake(): bool
+    {
+        return $this->id_document_rejection_reason !== null;
+    }
+
+    public function needsSelfieRetake(): bool
+    {
+        return $this->selfie_rejection_reason !== null;
     }
 }

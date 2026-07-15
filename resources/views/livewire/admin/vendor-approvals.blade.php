@@ -32,6 +32,18 @@
                             @else
                                 <div class="rounded-lg border border-dashed border-gray-200 aspect-video flex items-center justify-center text-xs text-gray-400">Not provided</div>
                             @endif
+
+                            @if ($vendor->id_document_rejection_reason)
+                                <div class="mt-1.5 text-xs text-red-600 bg-red-50 rounded-lg px-2.5 py-1.5">
+                                    Retake requested: {{ $vendor->id_document_rejection_reason }}
+                                </div>
+                            @elseif ($vendor->id_document_path)
+                                <div class="mt-1.5 flex items-start gap-1.5">
+                                    <input type="text" wire:model="rejectionReason.{{ $vendor->id }}.id" placeholder="Reason for retake" class="flex-1 text-xs rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                                    <button wire:click="requestRetake({{ $vendor->id }}, 'id')" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors">Request Retake</button>
+                                </div>
+                                @error('rejectionReason.'.$vendor->id.'.id') <span class="text-xs text-red-600 block mt-1">{{ $message }}</span> @enderror
+                            @endif
                         </div>
                         <div>
                             <div class="text-xs text-gray-400 mb-1">Live Selfie</div>
@@ -42,9 +54,21 @@
                             @else
                                 <div class="rounded-lg border border-dashed border-gray-200 aspect-video flex items-center justify-center text-xs text-gray-400">Not provided</div>
                             @endif
+
+                            @if ($vendor->selfie_rejection_reason)
+                                <div class="mt-1.5 text-xs text-red-600 bg-red-50 rounded-lg px-2.5 py-1.5">
+                                    Retake requested: {{ $vendor->selfie_rejection_reason }}
+                                </div>
+                            @elseif ($vendor->selfie_path)
+                                <div class="mt-1.5 flex items-start gap-1.5">
+                                    <input type="text" wire:model="rejectionReason.{{ $vendor->id }}.selfie" placeholder="Reason for retake" class="flex-1 text-xs rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                                    <button wire:click="requestRetake({{ $vendor->id }}, 'selfie')" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors">Request Retake</button>
+                                </div>
+                                @error('rejectionReason.'.$vendor->id.'.selfie') <span class="text-xs text-red-600 block mt-1">{{ $message }}</span> @enderror
+                            @endif
                         </div>
                     </div>
-                    <p class="text-xs text-gray-400 mt-2">Compare the ID photo and selfie above &mdash; confirm it's the same person before approving.</p>
+                    <p class="text-xs text-gray-400 mt-2">Compare the ID photo and selfie above &mdash; confirm it's the same person before approving. If a photo is unclear or doesn't match, request a retake instead of suspending the account.</p>
                 @endif
 
                 <div class="mt-3 flex justify-end gap-2">

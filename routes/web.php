@@ -27,6 +27,7 @@ use App\Livewire\Storefront\ProductDetail;
 use App\Livewire\Storefront\VendorShop;
 use App\Livewire\Storefront\Wishlist;
 use App\Livewire\Vendor\Dashboard as VendorDashboard;
+use App\Livewire\Vendor\IdentityVerification;
 use App\Livewire\Vendor\OrderManager as VendorOrderManager;
 use App\Livewire\Vendor\PayoutHistory;
 use App\Livewire\Vendor\ProductManager;
@@ -54,6 +55,7 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
     Route::get('/orders', VendorOrderManager::class)->name('orders');
     Route::get('/payouts', PayoutHistory::class)->name('payouts');
     Route::get('/qr-code', VendorQrCode::class)->name('qr-code');
+    Route::get('/identity', IdentityVerification::class)->name('identity');
     Route::get('/subscription', VendorSubscription::class)->name('subscription');
     Route::get('/subscription/callback', SubscriptionCallbackController::class)->name('subscription.callback');
 });

@@ -46,6 +46,13 @@
                             <x-slot:icon><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5A.75.75 0 014.5 3.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5zM3.75 14.25a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5zM13.5 4.5a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5zM13.5 13.5h2.25v2.25H13.5V13.5zM18 13.5h.75v.75H18v-.75zM13.5 18h.75v.75h-.75V18zM18 18h.75v.75H18V18z" /></svg></x-slot:icon>
                             Shop QR Code
                         </x-dashboard-nav-link>
+                        <x-dashboard-nav-link :href="route('vendor.identity')" :active="request()->routeIs('vendor.identity')">
+                            <x-slot:icon><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a.75.75 0 00.75-.75V5.25a.75.75 0 00-.75-.75h-15a.75.75 0 00-.75.75v13.5c0 .414.336.75.75.75zM9 9.75a2.25 2.25 0 114.5 0 2.25 2.25 0 01-4.5 0zM6 15a3 3 0 013-3h.75a3 3 0 013 3v.75H6V15z" /></svg></x-slot:icon>
+                            Identity Verification
+                            @if (auth()->user()->vendor?->needsIdDocumentRetake() || auth()->user()->vendor?->needsSelfieRetake())
+                                <span class="ml-1 inline-block h-2 w-2 rounded-full bg-red-500"></span>
+                            @endif
+                        </x-dashboard-nav-link>
                         <x-dashboard-nav-link :href="route('vendor.subscription')" :active="request()->routeIs('vendor.subscription')">
                             <x-slot:icon><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3M3.75 4.5h16.5a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5V6a1.5 1.5 0 011.5-1.5z" /></svg></x-slot:icon>
                             Subscription
