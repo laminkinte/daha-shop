@@ -5,10 +5,12 @@ namespace Tests\Feature;
 use App\Enums\VendorStatus;
 use App\Livewire\Admin\VendorApprovals;
 use App\Livewire\Vendor\IdentityVerification;
+use App\Mail\VendorDocumentRetakeRequested;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -49,6 +51,7 @@ class VendorKycModerationTest extends TestCase
     public function test_admin_can_request_an_id_document_retake_without_suspending_the_vendor(): void
     {
         Queue::fake();
+        Mail::fake();
 
         $vendor = $this->makeVendor();
         $admin = User::factory()->admin()->create();
@@ -69,6 +72,41 @@ class VendorKycModerationTest extends TestCase
                 && str_contains($job->message, 'ID document')
                 && str_contains($job->message, 'Photo is too blurry to read');
         });
+
+        Mail::assertQueued(VendorDocumentRetakeRequested::class, function ($mail) use ($vendor) {
+            return $mail->hasTo($vendor->user->email)
+                && $mail->documentLabel === 'ID document'
+                && $mail->reason === 'Photo is too blurry to read';
+        });
+    }
+
+    public function test_a_phone_pin_vendor_does_not_get_a_retake_email_only_sms(): void
+    {
+        Queue::fake();
+        Mail::fake();
+
+        $phoneUser = User::factory()->vendor()->create([
+            'uses_pin' => true,
+            'email' => 'responsive-check-shop@phone.dahashop.internal',
+        ]);
+        $vendor = Vendor::create([
+            'user_id' => $phoneUser->id,
+            'business_name' => 'Phone Vendor',
+            'slug' => 'phone-vendor',
+            'business_phone' => '+2348000000099',
+            'business_address' => 'Address',
+            'status' => VendorStatus::Pending,
+            'id_document_path' => 'vendor-kyc/old-id.jpg',
+        ]);
+        $admin = User::factory()->admin()->create();
+
+        Livewire::actingAs($admin)
+            ->test(VendorApprovals::class)
+            ->set("rejectionReason.{$vendor->id}.id", 'Blurry')
+            ->call('requestRetake', $vendor->id, 'id');
+
+        Queue::assertPushed(\App\Jobs\SendOrderStatusSms::class);
+        Mail::assertNothingQueued();
     }
 
     public function test_admin_can_request_a_selfie_retake_independently_of_the_id_document(): void

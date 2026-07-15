@@ -4,8 +4,10 @@ namespace App\Livewire\Admin;
 
 use App\Enums\VendorStatus;
 use App\Jobs\SendOrderStatusSms;
+use App\Mail\VendorDocumentRetakeRequested;
 use App\Models\Vendor;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -64,12 +66,21 @@ class VendorApprovals extends Component
 
         unset($this->rejectionReason[$vendorId][$type]);
 
-        if ($vendor->business_phone) {
-            $label = $type === 'id' ? 'ID document' : 'selfie';
+        $label = $type === 'id' ? 'ID document' : 'selfie';
 
+        if ($vendor->business_phone) {
             SendOrderStatusSms::dispatch(
                 $vendor->business_phone,
                 "Daha Shop: your {$label} photo needs to be retaken ({$reason}). Please log in to your vendor dashboard to resubmit it."
+            );
+        }
+
+        // Phone/PIN accounts get a synthetic @phone.dahashop.internal email
+        // (see register.blade.php) that isn't real - only email accounts
+        // that registered with an actual address get this notification too.
+        if ($vendor->user->email && ! $vendor->user->uses_pin) {
+            Mail::to($vendor->user->email)->queue(
+                new VendorDocumentRetakeRequested($vendor->business_name, $label, $reason)
             );
         }
     }
