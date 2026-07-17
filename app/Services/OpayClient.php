@@ -16,10 +16,13 @@ use RuntimeException;
  * sandbox transaction once OPay merchant keys are available, before relying
  * on this in production.
  */
-class OpayClient
+class OpayClient implements PaymentGatewayClient
 {
-    public function createCashierOrder(string $reference, int $amountKobo, string $returnUrl, string $callbackUrl, array $userInfo = []): array
+    public function initialize(string $reference, int $amountKobo, string $returnUrl, array $context = []): array
     {
+        $callbackUrl = $context['callbackUrl'];
+        $userInfo = $context['userInfo'] ?? [];
+
         $body = [
             'country' => 'NG',
             'reference' => $reference,
@@ -45,7 +48,7 @@ class OpayClient
         return $data['data'];
     }
 
-    public function queryStatus(string $reference): array
+    public function verifyTransaction(string $reference): array
     {
         $body = ['reference' => $reference, 'country' => 'NG'];
         $signature = $this->signRequest($body);
@@ -61,6 +64,11 @@ class OpayClient
         }
 
         return $data['data'];
+    }
+
+    public function transactionSucceeded(array $response): bool
+    {
+        return ($response['status'] ?? null) === 'SUCCESS';
     }
 
     /**
@@ -79,7 +87,7 @@ class OpayClient
      * Verifies a callback's `sha512` field against the exact field order
      * OPay's docs specify for transaction-status callbacks.
      */
-    public function verifyWebhookSignature(array $payload, ?string $signature): bool
+    public function verifyWebhookSignature(mixed $payload, ?string $signature): bool
     {
         if (! $signature) {
             return false;
