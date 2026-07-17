@@ -5,18 +5,21 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
-class PaystackClient
+class PaystackClient implements PaymentGatewayClient
 {
     private const BASE_URL = 'https://api.paystack.co';
 
-    public function initializeTransaction(string $email, int $amountKobo, string $reference, string $callbackUrl, array $metadata = []): array
+    public function initialize(string $reference, int $amountKobo, string $returnUrl, array $context = []): array
     {
+        $email = $context['email'];
+        $metadata = $context['metadata'] ?? [];
+
         $response = Http::withToken(config('services.paystack.secret_key'))
             ->post(self::BASE_URL.'/transaction/initialize', [
                 'email' => $email,
                 'amount' => $amountKobo,
                 'reference' => $reference,
-                'callback_url' => $callbackUrl,
+                'callback_url' => $returnUrl,
                 'metadata' => $metadata,
             ]);
 
@@ -39,7 +42,12 @@ class PaystackClient
         return $response->json('data');
     }
 
-    public function verifyWebhookSignature(string $payload, ?string $signature): bool
+    public function transactionSucceeded(array $response): bool
+    {
+        return ($response['status'] ?? null) === 'success';
+    }
+
+    public function verifyWebhookSignature(mixed $payload, ?string $signature): bool
     {
         if (! $signature) {
             return false;

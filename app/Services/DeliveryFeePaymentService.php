@@ -28,16 +28,18 @@ class DeliveryFeePaymentService
 
         $returnUrl .= (str_contains($returnUrl, '?') ? '&' : '?').'reference='.$reference;
 
-        $data = $this->opay->createCashierOrder(
+        $data = $this->opay->initialize(
             reference: $reference,
             amountKobo: $payment->amount,
             returnUrl: $returnUrl,
-            callbackUrl: route('webhooks.opay'),
-            userInfo: [
-                'userId' => (string) $order->user_id,
-                'userName' => $order->user->name,
-                'userMobile' => $order->address->phone,
-                'userEmail' => $order->user->email,
+            context: [
+                'callbackUrl' => route('webhooks.opay'),
+                'userInfo' => [
+                    'userId' => (string) $order->user_id,
+                    'userName' => $order->user->name,
+                    'userMobile' => $order->address->phone,
+                    'userEmail' => $order->user->email,
+                ],
             ],
         );
 
@@ -57,7 +59,7 @@ class DeliveryFeePaymentService
             return $payment;
         }
 
-        $data = $this->opay->queryStatus($reference);
+        $data = $this->opay->verifyTransaction($reference);
 
         if (($data['status'] ?? null) !== 'SUCCESS') {
             $payment->update(['status' => DeliveryFeePaymentStatus::Failed]);

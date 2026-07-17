@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 class SubscriptionService
 {
     public function __construct(
+        private PaymentGatewayManager $gateways,
         private PaystackClient $paystack,
         private OpayClient $opay,
     ) {}
@@ -33,34 +34,43 @@ class SubscriptionService
             'status' => SubscriptionStatus::Pending,
             'reference' => $reference,
         ]);
+        
+        $client = $this->gateways->client($gateway);
 
         if ($gateway === PaymentGateway::Opay) {
             // Append our reference explicitly rather than relying on however
             // OPay names its own query params on redirect back.
             $opayReturnUrl = $returnUrl.(str_contains($returnUrl, '?') ? '&' : '?').'reference='.$reference;
 
-            $data = $this->opay->createCashierOrder(
-                reference: $reference,
-                amountKobo: $subscription->amount,
-                returnUrl: $opayReturnUrl,
-                callbackUrl: route('webhooks.opay'),
-                userInfo: [
+        $data = $client->initialize(
+            reference: $reference,
+            amountKobo: $subscription->amount,
+            returnUrl: $opayReturnUrl,
+            context: [
+                'callbackUrl' => route('webhooks.opay'),
+                'userInfo' => [
                     'userId' => (string) $vendor->user_id,
                     'userName' => $vendor->business_name,
                     'userMobile' => $vendor->business_phone,
                     'userEmail' => $vendor->user->email,
                 ],
-            );
+            ],
+        );
 
             return $data['cashierUrl'];
         }
 
-        $data = $this->paystack->initializeTransaction(
-            email: $vendor->user->email,
-            amountKobo: $subscription->amount,
+        $data = $client->initialize(
             reference: $reference,
-            callbackUrl: $returnUrl,
-            metadata: ['vendor_id' => $vendor->id, 'plan' => $plan->value],
+            amountKobo: $subscription->amount,
+            returnUrl: $returnUrl,
+            context: [
+                'email' => $vendor->user->email,
+                'metadata' => [
+                    'vendor_id' => $vendor->id,
+                    'plan' => $plan->value,
+                ],
+            ],
         );
 
         return $data['authorization_url'];
@@ -79,9 +89,11 @@ class SubscriptionService
             return $subscription;
         }
 
-        $succeeded = $subscription->gateway === PaymentGateway::Opay
-            ? ($this->opay->queryStatus($reference)['status'] ?? null) === 'SUCCESS'
-            : ($this->paystack->verifyTransaction($reference)['status'] ?? null) === 'success';
+        $client = $this->gateways->client($subscription->gateway);
+
+        $response = $client->verifyTransaction($reference);
+
+        $succeeded = $client->transactionSucceeded($response);
 
         if (! $succeeded) {
             $subscription->update(['status' => SubscriptionStatus::Failed]);
