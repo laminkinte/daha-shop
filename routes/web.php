@@ -34,6 +34,7 @@ use App\Livewire\Vendor\ProductManager;
 use App\Livewire\Vendor\QrCode as VendorQrCode;
 use App\Livewire\Vendor\Subscription as VendorSubscription;
 use Illuminate\Support\Facades\Route;
+use Livewire\Volt\Volt;
 
 Route::get('/', ProductCatalog::class)->name('storefront.home');
 Route::get('/products/{product:slug}', ProductDetail::class)->name('storefront.product');
@@ -93,7 +94,7 @@ Route::get('dashboard', function () {
     };
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::view('profile', 'profile')
+Volt::route('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 

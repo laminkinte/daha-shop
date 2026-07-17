@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Daha Shop</string>
+    <string name="title_activity_main">Daha Shop</string>
+    <string name="package_name">ng.dahashop.app</string>
+    <string name="custom_url_scheme">ng.dahashop.app</string>
+</resources>
