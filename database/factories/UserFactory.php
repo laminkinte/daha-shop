@@ -59,6 +59,18 @@ class UserFactory extends Factory
 
     public function admin(): static
     {
-        return $this->state(fn (array $attributes) => ['role' => UserRole::Admin]);
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Admin,
+            'is_super_admin' => true,
+        ]);
+    }
+
+    public function scopedAdmin(array $permissions): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Admin,
+            'is_super_admin' => false,
+            'admin_permissions' => $permissions,
+        ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AdminPermission;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -24,11 +25,14 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'name',
         'email',
+        'email_verified_at',
         'phone',
         'phone_verified_at',
         'role',
         'password',
         'uses_pin',
+        'is_super_admin',
+        'admin_permissions',
     ];
 
     /**
@@ -54,6 +58,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'role' => UserRole::class,
             'uses_pin' => 'boolean',
+            'is_super_admin' => 'boolean',
+            'admin_permissions' => 'array',
         ];
     }
 
@@ -105,6 +111,20 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->isAdmin() && (bool) $this->is_super_admin;
+    }
+
+    public function hasAdminPermission(AdminPermission $permission): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->isAdmin() && in_array($permission->value, $this->admin_permissions ?? [], true);
     }
 
     public function isPhoneVerified(): bool

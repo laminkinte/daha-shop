@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+            'admin.permission' => \App\Http\Middleware\EnsureAdminHasPermission::class,
+            'super-admin' => \App\Http\Middleware\EnsureIsSuperAdmin::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
