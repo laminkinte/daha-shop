@@ -169,4 +169,9 @@ class VendorOrderService
             'status' => $anyFulfilled ? OrderStatus::Completed : OrderStatus::Cancelled,
         ]);
     }
+
+    public function finalizeOrderIfResolvedForPayment(VendorOrder $vendorOrder): void
+    {
+        $this->finalizeOrderIfResolved($vendorOrder);
+    }
 }

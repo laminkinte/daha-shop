@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Webhooks;
 
 use App\Http\Controllers\Controller;
 use App\Services\DeliveryFeePaymentService;
+use App\Services\DeliveryPaymentService;
 use App\Services\OpayClient;
 use App\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,7 @@ class OpayWebhookController extends Controller
         OpayClient $opay,
         SubscriptionService $subscriptions,
         DeliveryFeePaymentService $deliveryFeePayments,
+        DeliveryPaymentService $deliveryPayments,
     ): JsonResponse {
         $payload = $request->json()->all();
 
@@ -30,6 +32,8 @@ class OpayWebhookController extends Controller
 
         if (Str::startsWith($reference, 'delfee_')) {
             $deliveryFeePayments->verifyAndActivate($reference);
+        } elseif (Str::startsWith($reference, 'delivery_')) {
+            $deliveryPayments->verifyAndComplete($reference);
         } elseif ($reference !== '') {
             $subscriptions->verifyAndActivate($reference);
         }

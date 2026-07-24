@@ -62,6 +62,11 @@ class VendorOrder extends Model
         return $this->hasOne(CashReconciliation::class);
     }
 
+    public function deliveryPayment(): HasOne
+    {
+        return $this->hasOne(DeliveryPayment::class);
+    }
+
     public function codTotal(): int
     {
         return $this->items_subtotal + $this->delivery_fee;
