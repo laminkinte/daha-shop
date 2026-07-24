@@ -25,6 +25,13 @@ class DeliveryDetail extends Component
 
     public string $failureReason = 'customer_unreachable';
 
+    // Stopgap default so the view (which references this) doesn't fatal on
+    // an undefined variable - startPayment()/refreshPaymentStatus() are not
+    // implemented yet, this only stops the crash. See Kambaza2003's
+    // "implement QR and manual delivery payments" commit - this feature
+    // still needs finishing on the component side.
+    public string $paymentMethod = 'qr';
+
     public function mount(int $vendorOrderId): void
     {
         $this->vendorOrder = Auth::user()->deliveryAgent->vendorOrders()->with('order.address', 'vendor', 'items')->findOrFail($vendorOrderId);
