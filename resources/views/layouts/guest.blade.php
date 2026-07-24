@@ -19,7 +19,11 @@
             <!-- Branding panel -->
             <div class="bg-green-700 text-white lg:w-2/5 xl:w-1/3 flex flex-col justify-between px-6 sm:px-10 py-8 lg:py-12">
                 <a href="{{ route('storefront.home') }}" wire:navigate class="text-2xl font-bold tracking-tight">
-                    Daha <span class="text-green-200">Shop</span>
+                    @if ($logoUrl = app_logo_url())
+                        <img src="{{ $logoUrl }}" alt="{{ config('app.name') }}" class="h-10">
+                    @else
+                        Daha <span class="text-green-200">Shop</span>
+                    @endif
                 </a>
 
                 <div class="hidden lg:block my-12">

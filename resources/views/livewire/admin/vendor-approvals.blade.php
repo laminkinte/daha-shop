@@ -1,10 +1,87 @@
 <div>
-    <div class="flex items-center gap-2 mb-4 flex-wrap">
-        <button wire:click="$set('filter', 'all')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'all' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">All</button>
-        @foreach ($statuses as $status)
-            <button wire:click="$set('filter', '{{ $status->value }}')" class="text-xs px-3 py-1.5 rounded-full capitalize transition-colors {{ $filter === $status->value ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">{{ $status->value }}</button>
-        @endforeach
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div class="flex items-center gap-2 flex-wrap">
+            <button wire:click="$set('filter', 'all')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'all' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">All</button>
+            @foreach ($statuses as $status)
+                <button wire:click="$set('filter', '{{ $status->value }}')" class="text-xs px-3 py-1.5 rounded-full capitalize transition-colors {{ $filter === $status->value ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">{{ $status->value }}</button>
+            @endforeach
+        </div>
+        <button wire:click="$set('showForm', true)" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+            + Add Vendor
+        </button>
     </div>
+
+    @if ($showForm)
+        <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+                <h2 class="font-semibold text-lg mb-4">Add Vendor</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Owner Name</label>
+                        <input type="text" wire:model="name" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        @error('name') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">Email</label>
+                            <input type="email" wire:model="email" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                            @error('email') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">Phone</label>
+                            <input type="text" wire:model="phone" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                            @error('phone') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400">A temporary password will be generated and emailed to this address. The vendor is created already approved &mdash; no ID verification required.</p>
+
+                    <hr class="border-gray-100">
+
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Business Name</label>
+                        <input type="text" wire:model="businessName" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        @error('businessName') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Business Phone</label>
+                        <input type="text" wire:model="businessPhone" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        @error('businessPhone') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Business Address</label>
+                        <input type="text" wire:model="businessAddress" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        @error('businessAddress') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">State (optional)</label>
+                            <select wire:model.live="stateId" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                                <option value="">Select</option>
+                                @foreach ($states as $state)
+                                    <option value="{{ $state->id }}">{{ $state->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('stateId') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">LGA (optional)</label>
+                            <select wire:model="lgaId" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                                <option value="">Select</option>
+                                @foreach ($this->lgas as $lga)
+                                    <option value="{{ $lga->id }}">{{ $lga->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('lgaId') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button wire:click="$set('showForm', false)" class="text-sm text-gray-600 px-4 py-2 hover:text-gray-800">Cancel</button>
+                    <button wire:click="create" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">Create</button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <div class="space-y-4">
         @forelse ($vendors as $vendor)

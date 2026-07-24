@@ -1,7 +1,16 @@
 <div>
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">Platform Overview</h2>
-        <p class="text-sm text-gray-500 mt-1">A snapshot of marketplace health across vendors, orders, and delivery.</p>
+    <div class="mb-6 flex items-start justify-between flex-wrap gap-3">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Platform Overview</h2>
+            <p class="text-sm text-gray-500 mt-1">A snapshot of marketplace health across vendors, orders, and delivery.</p>
+        </div>
+        <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            @foreach (['7d' => '7 days', '30d' => '30 days', '90d' => '90 days', 'all' => 'All time'] as $value => $label)
+                <button wire:click="setRange('{{ $value }}')" class="text-xs font-semibold px-3 py-1.5 rounded-md transition-colors {{ $range === $value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700' }}">
+                    {{ $label }}
+                </button>
+            @endforeach
+        </div>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -57,4 +66,60 @@
             <div class="text-3xl font-bold text-gray-900 mt-3">{{ $stats['delivery_success_rate'] }}%</div>
         </div>
     </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+        <div class="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h3 class="text-sm font-semibold text-gray-800 mb-4">GMV Trend</h3>
+            <div wire:ignore
+                x-data="gmvChart(@js($gmvTrend))"
+                x-init="render()"
+                wire:key="gmv-chart-{{ $range }}"
+                class="h-64">
+                <canvas x-ref="canvas"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <h3 class="text-sm font-semibold text-gray-800 mb-4">Top Vendors by Revenue</h3>
+            <div class="space-y-3">
+                @forelse ($topVendors as $vendor)
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-700 truncate">{{ $vendor->business_name }}</span>
+                        <span class="font-semibold text-gray-900 shrink-0 ml-2">{{ naira((int) ($vendor->revenue ?? 0)) }}</span>
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-400">No vendor revenue in this period.</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
 </div>
+
+@script
+<script>
+    Alpine.data('gmvChart', (trend) => ({
+        chart: null,
+        render() {
+            this.chart = new Chart(this.$refs.canvas, {
+                type: 'line',
+                data: {
+                    labels: trend.labels,
+                    datasets: [{
+                        label: 'GMV (NGN)',
+                        data: trend.data,
+                        borderColor: '#15803d',
+                        backgroundColor: 'rgba(21, 128, 61, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                },
+            });
+        },
+    }));
+</script>
+@endscript

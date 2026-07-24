@@ -18,7 +18,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16 gap-2 sm:gap-4">
                 <a href="{{ route('storefront.home') }}" wire:navigate class="text-xl font-bold tracking-tight shrink-0">
-                    Daha <span class="text-green-200">Shop</span>
+                    @if ($logoUrl = app_logo_url())
+                        <img src="{{ $logoUrl }}" alt="{{ config('app.name') }}" class="h-8">
+                    @else
+                        Daha <span class="text-green-200">Shop</span>
+                    @endif
                 </a>
 
                 <form action="{{ route('storefront.home') }}" method="GET" class="hidden md:flex flex-1 max-w-xl items-center bg-white rounded-lg shadow-sm ring-1 ring-white/10 focus-within:ring-2 focus-within:ring-green-300 overflow-hidden">

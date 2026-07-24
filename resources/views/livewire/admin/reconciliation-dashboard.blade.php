@@ -29,11 +29,16 @@
         </div>
     </div>
 
-    <div class="flex items-center gap-2 mb-4 flex-wrap">
-        <button wire:click="$set('filter', 'all')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'all' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">All</button>
-        @foreach ($statuses as $status)
-            <button wire:click="$set('filter', '{{ $status->value }}')" class="text-xs px-3 py-1.5 rounded-full capitalize transition-colors {{ $filter === $status->value ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">{{ $status->value }}</button>
-        @endforeach
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div class="flex items-center gap-2 flex-wrap">
+            <button wire:click="$set('filter', 'all')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'all' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">All</button>
+            @foreach ($statuses as $status)
+                <button wire:click="$set('filter', '{{ $status->value }}')" class="text-xs px-3 py-1.5 rounded-full capitalize transition-colors {{ $filter === $status->value ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">{{ $status->value }}</button>
+            @endforeach
+        </div>
+        <a href="{{ route('admin.reconciliation.export', ['filter' => $filter]) }}" class="text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
+            Export CSV
+        </a>
     </div>
 
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">

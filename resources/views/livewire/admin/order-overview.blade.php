@@ -1,9 +1,14 @@
 <div>
-    <div class="flex items-center gap-2 mb-4 flex-wrap">
-        <button wire:click="$set('filter', 'all')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'all' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">All</button>
-        <button wire:click="$set('filter', 'pending_admin_review')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'pending_admin_review' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">Awaiting Admin Review</button>
-        <button wire:click="$set('filter', 'confirmed')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'confirmed' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">Confirmed</button>
-        <button wire:click="$set('filter', 'rejected')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'rejected' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">Rejected</button>
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div class="flex items-center gap-2 flex-wrap">
+            <button wire:click="$set('filter', 'all')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'all' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">All</button>
+            <button wire:click="$set('filter', 'pending_admin_review')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'pending_admin_review' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">Awaiting Admin Review</button>
+            <button wire:click="$set('filter', 'confirmed')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'confirmed' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">Confirmed</button>
+            <button wire:click="$set('filter', 'rejected')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'rejected' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">Rejected</button>
+        </div>
+        <a href="{{ route('admin.orders.export', ['filter' => $filter]) }}" class="text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
+            Export CSV
+        </a>
     </div>
 
     @php

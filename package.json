@@ -21,6 +21,7 @@
         "@capacitor/android": "^8.4.2",
         "@capacitor/cli": "^8.4.2",
         "@capacitor/core": "^8.4.2",
+        "chart.js": "^4.5.1",
         "face-api.js": "^0.22.2"
     }
 }
