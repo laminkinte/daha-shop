@@ -14,9 +14,10 @@ someone needs to create a Termii (or similar) account, add the API key to `.env`
 (`MARKETHUB_SMS_GATEWAY=termii`, `TERMII_API_KEY`, `TERMII_SENDER_ID`), and confirm real OTP texts
 actually arrive on a real Nigerian number.
 
-**2. Real email delivery.** `MAIL_MAILER=log` — password reset and verification emails aren't
-being sent anywhere. Needs a real provider (Postmark/SES/Resend are already referenced in
-`config/services.php`) wired up in `.env` and tested end to end.
+**2. Real email delivery — done.** `MAIL_MAILER=smtp` via a Gmail App Password
+(`MAIL_HOST=smtp.gmail.com`), confirmed working end to end. See `docs/EMAIL_AND_SMS_STRATEGY.md`
+for the pros/cons of this setup (free, but per-day sending caps and weaker deliverability than a
+dedicated provider like Postmark/SES) and for when it's worth switching.
 
 **3. Camera capture on real devices.** The ID/selfie capture (`getUserMedia` + Livewire's JS
 upload API, in `resources/views/components/camera-capture.blade.php`) was built and tested in a
@@ -54,38 +55,94 @@ a verified OPay Business merchant account, and re-verifying the `amount.total` u
 sandbox transaction before trusting it live. Orders with no delivery fee due (all-pickup orders)
 skip this step entirely and confirm immediately, same as before this feature existed.
 
-**6. Add more payment gateways - only Paystack and OPay exist today, both used for the same two
-things (vendor subscriptions, prepaid delivery fee).** Relying on two gateways is thin,
-particularly since OPay requires a verified Business merchant account (real KYC, can take a while
-to get approved) before you can even get sandbox keys - if that account approval stalls or OPay
-has an outage, vendors currently have exactly one working payment path. Add at least one more
-well-known Nigerian gateway; **Flutterwave** is the obvious first pick (Paystack's main
-competitor, instant test-mode signup like Paystack rather than OPay's slower business-KYC
-process, and it's what most Nigerian founders reach for as a second option). Monnify or
-Interswitch/Quickteller are reasonable second additions after that if you want a third.
+**6. Digital "scan to pay" at delivery, replacing physical cash collection (assigned to
+Kambaza2003).** Right now, when an agent marks a `VendorOrder` delivered
+(`App\Livewire\Agent\DeliveryDetail::markDelivered()` → `App\Services\VendorOrderService::markDelivered()`,
+`app/Services/VendorOrderService.php:69-100`), they type in how much physical cash they collected,
+which immediately creates a `CashReconciliation` row (`status: Collected` or `Short`). Later, the
+agent hands that cash to the office and someone marks it remitted
+(`App\Services\ReconciliationService::remit()`) before the vendor becomes payout-eligible
+(`App\Services\PayoutService::generateForVendor()` only pays out orders with
+`cashReconciliation.status = Remitted`). The idea: instead of the agent physically collecting cash,
+the customer scans a QR code at the doorstep and pays digitally — no cash changes hands, no office
+remittance step, and (if wired all the way through) vendors could become payout-eligible the
+moment the digital payment clears instead of waiting on a physical cash handoff.
 
-Before wiring in a new gateway, worth fixing the architecture first rather than bolting on
-another branch:
+There's already a complete, working blueprint for exactly this kind of "pay right now" flow to
+copy: delivery-fee prepayment (item 5 above). `App\Services\DeliveryFeePaymentService::initialize()`
+creates a payment record, calls `App\Services\OpayClient::initialize()` for a hosted checkout URL,
+and confirmation comes back through two independent, idempotent paths —
+`App\Http\Controllers\Storefront\DeliveryFeeCallbackController` (browser redirect back) and
+`App\Http\Controllers\Webhooks\OpayWebhookController` (server-to-server webhook,
+`routes/web.php:69`, already routes by reference prefix to tell delivery-fee payments apart from
+subscription payments). The QR code itself is also a solved problem elsewhere in the app —
+`App\Livewire\Vendor\QrCode` already uses the installed `endroid/qr-code` package to turn a URL
+into a scannable PNG.
 
-- `App\Services\SubscriptionService::initialize()` and `verifyAndActivate()`
-  (`app/Services/SubscriptionService.php`) currently do `if ($gateway === PaymentGateway::Opay) { ... } else { /* assumes Paystack */ }`
-  - a third gateway means a third branch, and a fourth means a fourth. Extract a common interface
-  first (e.g. `PaymentGatewayClient` with `initialize(...)`, `verifyTransaction(string $reference)`,
-  `verifyWebhookSignature(...)`), have `PaystackClient`/`OpayClient` implement it, then have
-  `SubscriptionService` resolve the right implementation from `App\Enums\PaymentGateway` (a
-  `client()` method on the enum itself, resolving out of the container, is a clean way to do this)
-  instead of branching on the gateway type inline.
-- Add the new case to `App\Enums\PaymentGateway` (`label()` too).
-- New gateway credentials go in `config/services.php` + `.env` (see the existing `paystack`/`opay`
-  blocks for the pattern), a new webhook controller under `app/Http/Controllers/Webhooks/`, and a
-  route in `routes/web.php` next to `webhooks.paystack`/`webhooks.opay`.
-- The gateway-picker UI (`resources/views/livewire/vendor/subscription.blade.php`, the
-  `selectedGateway` buttons around line 65) needs a third button, and
-  `App\Services\DeliveryFeePaymentService` currently hard-codes `OpayClient` in its constructor -
-  decide there whether customers should get a gateway choice for delivery-fee prepayment too, or
-  whether that one stays OPay-only by design.
-- Follow the `tests/Feature/VendorSubscriptionTest.php` pattern (it already covers both Paystack
-  and OPay init/callback/webhook flows) to add equivalent coverage for the new gateway.
+Open questions to settle before writing code (this needs a real design decision, not just wiring):
+- **What does the QR code actually encode?** Almost certainly a link to a public, unauthenticated
+  payment page for that specific `VendorOrder` (calling `PaymentGatewayClient::initialize()` with
+  the item subtotal as the amount) — the customer scans it with their OWN phone and pays with
+  their own card/bank app, not the agent's device.
+- **Does this replace `CashReconciliation` entirely for digitally-paid orders, or reuse it?** The
+  cleanest option is probably: on successful digital payment, mark `VendorOrder.status = Delivered`
+  and `cash_collected` to the paid amount, but skip creating a `CashReconciliation` row at all
+  (same as how pickup orders already skip it — see `VendorOrderService::markPickedUp()`) — then
+  `PayoutService::generateForVendor()` needs a second eligibility path alongside "remitted cash"
+  for "digitally paid, no reconciliation needed."
+- **Fallback for when the customer can't/won't pay at the door** (no signal, no working payment
+  app, wants to stick with cash) — the agent almost certainly still needs a physical-cash option
+  to fall back to; this shouldn't be all-or-nothing on day one.
+- **Prepay-before-delivery, as a separate but related idea**: letting a customer pay for the item
+  cost upfront at checkout instead of at the door (COD stays the default, prepay becomes a choice).
+  This is closer to item 5's existing pattern than the QR-at-delivery flow is — the delivery-fee
+  prepayment step could arguably be generalized into "prepay delivery fee + optionally item cost
+  too" rather than building a whole separate prepay flow from scratch. Worth deciding up front
+  whether scan-to-pay-at-delivery and prepay-at-checkout are one feature or two.
+
+**7. Add more payment gateways - status update.** The old inline
+`if ($gateway === PaymentGateway::Opay) { ... } else { /* assumes Paystack */ }` branching in
+`SubscriptionService::initialize()` is gone - it now returns a normalized
+`['type' => 'redirect', 'url' => ...]` or `['type' => 'virtual_account', 'account_number' => ...]`
+array (see `app/Services/SubscriptionService.php`), so adding another gateway no longer means
+another special case in the caller. Current state per gateway:
+
+- **Paystack, OPay** - unchanged, real, working (with OPay's existing amount-unit caveat above).
+- **Monnify** (the actual payment-gateway product behind "MoniePoint" - MoniePoint itself has no
+  merchant API) - `app/Services/MonnifyClient.php` is wired in and live in the vendor subscription
+  gateway picker. **Built from general knowledge of Monnify's typical API shape, NOT fetched live
+  documentation** (docs.monnify.com/developers.monnify.com is a JS-rendered SPA that couldn't be
+  read at the time this was written) - same caveat class as OPay's own unverified amount unit.
+  Before trusting this in production: get a real Monnify sandbox account, verify the OAuth
+  token-login endpoint/field names, the init-transaction request/response shape, and especially
+  the webhook signature hash formula in `MonnifyClient::verifyWebhookSignature()` (the field
+  concatenation order used there is a best guess).
+- **PalmPay** (`app/Services/PalmPayClient.php`) - architecture-only stub, every method throws.
+  Docs: `docs.palmpay.com`, business/merchant portal `business.palmpay.com`, payin product
+  `palmpay.com/business/payin`. Known from public search only: the API uses `PaymentNotification`/
+  `QueryTxnStatus` endpoints with encrypted request/response payloads - the encryption scheme,
+  endpoint paths, and signature header are NOT known. Not added to the vendor-facing gateway
+  picker (`resources/views/livewire/vendor/subscription.blade.php`) on purpose - don't expose a
+  payment option that's guaranteed to error. Add it there once the client is real and verified.
+- **Kuda** (`app/Services/KudaClient.php`) - architecture-only stub, every method throws. Docs:
+  `developer.kuda.com`, `docs.kuda.com`, `business-support.kuda.com`. Architecturally different
+  from the others: Kuda's Business API collects payment via a dynamically-generated virtual
+  account number the customer bank-transfers into, not a hosted-checkout redirect -
+  `SubscriptionService::initialize()` already has a `virtual_account` branch and
+  `Subscription.php`/`subscription.blade.php` already render a "transfer to this account" panel
+  for that case, so the UI/service plumbing is ready; only `KudaClient`'s actual HTTP calls need
+  building once real API docs/sandbox access exist. Also not on the vendor-facing picker yet.
+- All three new enum cases (`App\Enums\PaymentGateway::Monnify/PalmPay/Kuda`), `config/services.php`
+  blocks, and (for Monnify) the webhook route (`POST /webhooks/monnify`) are already in place -
+  see `tests/Feature/VendorSubscriptionTest.php` (Monnify init/callback/webhook coverage) and
+  `tests/Feature/PaymentGatewayStubsTest.php` (proves PalmPay/Kuda fail loudly rather than
+  silently) for the patterns to extend once PalmPay/Kuda are implemented for real.
+- `App\Services\DeliveryFeePaymentService` still hard-codes `OpayClient` directly - untouched by
+  this round, still an open decision whether delivery-fee prepayment should also become
+  gateway-selectable.
+- Flutterwave and Interswitch/Quickteller remain reasonable further additions if you want a
+  fourth/fifth option - same pattern (implement `PaymentGatewayClient`, wire into
+  `PaymentGatewayManager`, add config + webhook route) applies.
 
 ---
 
@@ -140,7 +197,11 @@ another branch:
 
 ---
 
-Run `php artisan test` after any change — 105 tests currently pass and cover the full order
-lifecycle, registration, product moderation, seller verification, vendor subscription (Paystack
-and OPay), pickup fulfillment, prepaid delivery-fee, vendor payout-eligibility, and vendor KYC
-photo retake-request flows.
+Run `php artisan test` after any change — 174 tests currently pass and cover the full order
+lifecycle, registration, product moderation, seller verification, vendor subscription (Paystack,
+OPay, and Monnify - see `PaymentGatewayStubsTest` for the PalmPay/Kuda stub-safety coverage),
+pickup fulfillment, prepaid delivery-fee, vendor payout-eligibility, vendor KYC photo
+retake-request flows, the sub-admin permission system + audit trail (`AdminPermissionsTest`,
+`AdminAuditLogTest`), admin-created vendor/agent/admin accounts, and the reporting
+dashboard/business settings/CSV export suite (`AdminDashboardReportingTest`, `BusinessSettingsTest`,
+`AdminExportTest`, `PayoutOverviewTest`).
