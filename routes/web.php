@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\VendorDocumentController;
+use App\Http\Controllers\Agent\DeliveryPaymentCallbackController;
 use App\Http\Controllers\Storefront\DeliveryFeeCallbackController;
 use App\Http\Controllers\Vendor\SubscriptionCallbackController;
 use App\Http\Controllers\Webhooks\MonnifyWebhookController;
@@ -92,6 +93,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 Route::middleware(['auth', 'role:agent'])->prefix('agent')->name('agent.')->group(function () {
     Route::get('/', AssignedDeliveries::class)->name('deliveries');
     Route::get('/deliveries/{vendorOrderId}', DeliveryDetail::class)->name('deliveries.show');
+    Route::get('/delivery-payment/callback', DeliveryPaymentCallbackController::class)->name('delivery-payment.callback');
     Route::get('/remittance', RemittanceForm::class)->name('remittance');
 });
 

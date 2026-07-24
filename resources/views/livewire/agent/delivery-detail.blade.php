@@ -4,33 +4,42 @@
         <div class="text-sm text-gray-600 space-y-1">
             <div><span class="text-gray-400">Deliver to:</span> {{ $vendorOrder->order->address->street_address }}, {{ $vendorOrder->order->address->area }}</div>
             <div><span class="text-gray-400">Customer phone:</span> {{ $vendorOrder->order->address->phone }}</div>
-            <div><span class="text-gray-400">Expected cash to collect:</span> <span class="font-bold text-green-700">{{ naira($vendorOrder->cashDueAtDelivery()) }}</span></div>
+            <div><span class="text-gray-400">Payment due:</span> <span class="font-bold text-green-700">{{ naira($vendorOrder->cashDueAtDelivery()) }}</span></div>
             @if ($vendorOrder->delivery_fee > 0)
                 <div class="text-xs text-gray-400">Delivery fee of {{ naira($vendorOrder->delivery_fee) }} was already paid online via OPay &mdash; don't collect it again.</div>
             @endif
         </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Mark as Delivered</h3>
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6" wire:poll.5s="refreshPaymentStatus">
+        <h3 class="font-semibold text-gray-800 mb-4">Collect Digital Payment</h3>
+        @if ($vendorOrder->deliveryPayment)
+            <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 mb-4">
+                <p class="font-semibold text-amber-900">{{ ucfirst($vendorOrder->deliveryPayment->status->value) }} payment</p>
+                <p class="text-sm text-amber-800">Ask the customer to complete payment. This screen updates automatically.</p>
+                @if ($vendorOrder->deliveryPayment->cashier_url)
+                    <a href="{{ $vendorOrder->deliveryPayment->cashier_url }}" target="_blank" class="inline-block mt-3 text-sm font-semibold text-green-700 underline">Open payment page</a>
+                    <img src="https://quickchart.io/qr?size=240&text={{ urlencode($vendorOrder->deliveryPayment->cashier_url) }}" alt="Payment QR code" class="mt-4 w-48 h-48 border p-2 bg-white">
+                @endif
+            </div>
+        @endif
         <div class="space-y-4">
             <div>
-                <label class="text-sm font-medium text-gray-700">Cash Collected (₦)</label>
-                <input type="text" wire:model="cashCollected" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
-                @error('cashCollected') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
-                <p class="text-xs text-gray-400 mt-1">If the customer paid less than expected (e.g. no change available), enter the actual amount collected here and note it below.</p>
+                <label class="text-sm font-medium text-gray-700">Payment option</label>
+                <select wire:model="paymentMethod" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                    <option value="qr">Scan to Pay (QR code)</option>
+                    <option value="manual">Manual payment request</option>
+                </select>
             </div>
-            <div>
-                <label class="text-sm font-medium text-gray-700">Denomination / Change Notes (optional)</label>
-                <input type="text" wire:model="denominationNotes" placeholder="e.g. Paid with ₦2000 notes, no change for ₦500" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
-            </div>
-            <div>
-                <label class="text-sm font-medium text-gray-700">Proof of Delivery Photo (optional)</label>
-                <input type="file" wire:model="proofPhoto" class="mt-1 w-full text-sm">
-                @error('proofPhoto') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
-            </div>
-            <button wire:click="markDelivered" wire:loading.attr="disabled" class="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60">
-                Confirm Delivery &amp; Cash Collected
+            @if ($paymentMethod === 'manual')
+                <div>
+                    <label class="text-sm font-medium text-gray-700">Customer phone number</label>
+                    <input type="text" wire:model="customerPhone" placeholder="e.g. 08012345678" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                    @error('customerPhone') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                </div>
+            @endif
+            <button wire:click="startPayment" wire:loading.attr="disabled" class="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60">
+                {{ $vendorOrder->deliveryPayment?->status?->value === 'failed' ? 'Retry Payment' : 'Start Payment' }}
             </button>
         </div>
     </div>

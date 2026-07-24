@@ -32,6 +32,7 @@ Thumbs.db
 /android/.idea
 *.apk
 *.aab
+/android/gradle/wrapper/*-all.zip
 
 # iOS / Capacitor
 /ios/App/Pods
