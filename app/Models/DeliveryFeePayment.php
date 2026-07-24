@@ -3,18 +3,20 @@
 namespace App\Models;
 
 use App\Enums\DeliveryFeePaymentStatus;
+use App\Enums\PaymentGateway;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DeliveryFeePayment extends Model
 {
     protected $fillable = [
-        'order_id', 'reference', 'amount', 'status', 'paid_at',
+        'order_id', 'gateway', 'reference', 'amount', 'status', 'paid_at',
     ];
 
     protected function casts(): array
     {
         return [
+            'gateway' => PaymentGateway::class,
             'status' => DeliveryFeePaymentStatus::class,
             'paid_at' => 'datetime',
         ];

@@ -446,4 +446,166 @@ class VendorSubscriptionTest extends TestCase
 
         $this->assertSame(SubscriptionStatus::Pending, VendorSubscription::where('reference', 'sub_ref_opay_4')->firstOrFail()->status);
     }
+
+    public function test_subscribing_with_monnify_initializes_and_redirects_to_checkout_url(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('monnify_access_token');
+        config(['services.monnify.api_key' => 'MK_TEST_KEY', 'services.monnify.secret_key' => 'monnify_test_secret']);
+
+        Http::fake([
+            'sandbox.monnify.com/api/v1/auth/login' => Http::response([
+                'requestSuccessful' => true,
+                'responseBody' => ['accessToken' => 'fake-token'],
+            ], 200),
+            'sandbox.monnify.com/api/v1/merchant/transactions/init-transaction' => Http::response([
+                'requestSuccessful' => true,
+                'responseBody' => [
+                    'checkoutUrl' => 'https://sandbox.monnify.com/checkout/abc123',
+                    'paymentReference' => 'sub_ref_monnify_1',
+                ],
+            ], 200),
+        ]);
+
+        $vendor = $this->makeVendor();
+
+        Livewire::actingAs($vendor->user)
+            ->test(Subscription::class)
+            ->set('selectedPlan', 'monthly')
+            ->set('selectedGateway', 'monnify')
+            ->call('subscribe')
+            ->assertRedirect('https://sandbox.monnify.com/checkout/abc123');
+
+        $subscription = VendorSubscription::where('vendor_id', $vendor->id)->firstOrFail();
+
+        $this->assertSame(PaymentGateway::Monnify, $subscription->gateway);
+        $this->assertSame(SubscriptionStatus::Pending, $subscription->status);
+
+        Http::assertSent(function ($request) use ($subscription) {
+            return $request->url() === 'https://sandbox.monnify.com/api/v1/merchant/transactions/init-transaction'
+                && $request['paymentReference'] === $subscription->reference
+                && (float) $request['amount'] === 5000.0
+                && $request['currencyCode'] === 'NGN';
+        });
+    }
+
+    public function test_monnify_callback_activates_subscription_when_status_query_reports_paid(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('monnify_access_token');
+        config(['services.monnify.api_key' => 'MK_TEST_KEY', 'services.monnify.secret_key' => 'monnify_test_secret']);
+
+        $vendor = $this->makeVendor();
+
+        $subscription = VendorSubscription::create([
+            'vendor_id' => $vendor->id,
+            'gateway' => PaymentGateway::Monnify,
+            'plan' => SubscriptionPlan::Monthly,
+            'amount' => 500000,
+            'status' => SubscriptionStatus::Pending,
+            'reference' => 'sub_ref_monnify_2',
+        ]);
+
+        Http::fake([
+            'sandbox.monnify.com/api/v1/auth/login' => Http::response([
+                'requestSuccessful' => true,
+                'responseBody' => ['accessToken' => 'fake-token'],
+            ], 200),
+            'sandbox.monnify.com/api/v2/transactions/*' => Http::response([
+                'requestSuccessful' => true,
+                'responseBody' => ['paymentReference' => 'sub_ref_monnify_2', 'paymentStatus' => 'PAID'],
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($vendor->user)
+            ->get(route('vendor.subscription.callback', ['reference' => 'sub_ref_monnify_2']));
+
+        $response->assertRedirect(route('vendor.subscription'));
+
+        $subscription->refresh();
+        $this->assertSame(SubscriptionStatus::Active, $subscription->status);
+        $this->assertTrue($vendor->fresh()->hasActiveSubscription());
+    }
+
+    public function test_monnify_webhook_activates_subscription_with_valid_signature(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('monnify_access_token');
+        config(['services.monnify.api_key' => 'MK_TEST_KEY', 'services.monnify.secret_key' => 'monnify_test_secret']);
+
+        $vendor = $this->makeVendor();
+
+        VendorSubscription::create([
+            'vendor_id' => $vendor->id,
+            'gateway' => PaymentGateway::Monnify,
+            'plan' => SubscriptionPlan::Monthly,
+            'amount' => 500000,
+            'status' => SubscriptionStatus::Pending,
+            'reference' => 'sub_ref_monnify_3',
+        ]);
+
+        Http::fake([
+            'sandbox.monnify.com/api/v1/auth/login' => Http::response([
+                'requestSuccessful' => true,
+                'responseBody' => ['accessToken' => 'fake-token'],
+            ], 200),
+            'sandbox.monnify.com/api/v2/transactions/*' => Http::response([
+                'requestSuccessful' => true,
+                'responseBody' => ['paymentReference' => 'sub_ref_monnify_3', 'paymentStatus' => 'PAID'],
+            ], 200),
+        ]);
+
+        $eventData = [
+            'transactionReference' => 'MNFY|20260712|000001',
+            'paymentReference' => 'sub_ref_monnify_3',
+            'amountPaid' => '5000.00',
+            'paidOn' => '2026-07-12 11:46:26.0',
+        ];
+
+        $signingString = implode('|', [
+            'MK_TEST_KEY',
+            $eventData['transactionReference'],
+            $eventData['paymentReference'],
+            $eventData['amountPaid'],
+            $eventData['paidOn'],
+            'monnify_test_secret',
+        ]);
+
+        $body = json_encode(['eventType' => 'SUCCESSFUL_TRANSACTION', 'eventData' => $eventData]);
+        $signature = hash_hmac('sha512', $signingString, 'monnify_test_secret');
+
+        $response = $this->call('POST', route('webhooks.monnify'), [], [], [], [
+            'HTTP_monnify-signature' => $signature,
+            'CONTENT_TYPE' => 'application/json',
+        ], $body);
+
+        $response->assertOk();
+
+        $subscription = VendorSubscription::where('reference', 'sub_ref_monnify_3')->firstOrFail();
+        $this->assertSame(SubscriptionStatus::Active, $subscription->status);
+    }
+
+    public function test_monnify_webhook_rejects_invalid_signature(): void
+    {
+        config(['services.monnify.api_key' => 'MK_TEST_KEY', 'services.monnify.secret_key' => 'monnify_test_secret']);
+
+        $vendor = $this->makeVendor();
+
+        VendorSubscription::create([
+            'vendor_id' => $vendor->id,
+            'gateway' => PaymentGateway::Monnify,
+            'plan' => SubscriptionPlan::Monthly,
+            'amount' => 500000,
+            'status' => SubscriptionStatus::Pending,
+            'reference' => 'sub_ref_monnify_4',
+        ]);
+
+        $body = json_encode(['eventType' => 'SUCCESSFUL_TRANSACTION', 'eventData' => ['paymentReference' => 'sub_ref_monnify_4']]);
+
+        $response = $this->call('POST', route('webhooks.monnify'), [], [], [], [
+            'HTTP_monnify-signature' => 'not-the-right-signature',
+            'CONTENT_TYPE' => 'application/json',
+        ], $body);
+
+        $response->assertStatus(401);
+
+        $this->assertSame(SubscriptionStatus::Pending, VendorSubscription::where('reference', 'sub_ref_monnify_4')->firstOrFail()->status);
+    }
 }

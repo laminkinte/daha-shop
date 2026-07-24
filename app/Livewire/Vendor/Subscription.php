@@ -18,15 +18,19 @@ class Subscription extends Component
 
     public ?string $error = null;
 
+    /** @var array<string, string>|null */
+    public ?array $virtualAccount = null;
+
     public function subscribe(SubscriptionService $subscriptions)
     {
         $vendor = Auth::user()->vendor;
         $plan = SubscriptionPlan::from($this->selectedPlan);
         $gateway = PaymentGateway::from($this->selectedGateway);
         $this->error = null;
+        $this->virtualAccount = null;
 
         try {
-            $url = $subscriptions->initialize($vendor, $plan, $gateway, route('vendor.subscription.callback'));
+            $result = $subscriptions->initialize($vendor, $plan, $gateway, route('vendor.subscription.callback'));
         } catch (\Throwable $e) {
             report($e);
             $this->error = 'We could not start the payment right now. Please try again shortly.';
@@ -34,7 +38,13 @@ class Subscription extends Component
             return null;
         }
 
-        return $this->redirect($url, navigate: false);
+        if ($result['type'] === 'virtual_account') {
+            $this->virtualAccount = $result;
+
+            return null;
+        }
+
+        return $this->redirect($result['url'], navigate: false);
     }
 
     public function render()

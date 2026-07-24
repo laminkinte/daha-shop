@@ -52,4 +52,28 @@ return [
         'sandbox' => env('OPAY_SANDBOX', true),
     ],
 
+    'monnify' => [
+        'api_key' => env('MONNIFY_API_KEY'),
+        'secret_key' => env('MONNIFY_SECRET_KEY'),
+        'contract_code' => env('MONNIFY_CONTRACT_CODE'),
+        'sandbox' => env('MONNIFY_SANDBOX', true),
+    ],
+
+    // Not yet implemented (PalmPayClient throws) - placeholders for when a
+    // real merchant account and verified API docs are available.
+    'palmpay' => [
+        'merchant_id' => env('PALMPAY_MERCHANT_ID'),
+        'app_id' => env('PALMPAY_APP_ID'),
+        'private_key' => env('PALMPAY_PRIVATE_KEY'),
+        'sandbox' => env('PALMPAY_SANDBOX', true),
+    ],
+
+    // Not yet implemented (KudaClient throws) - placeholders for when a
+    // real business account and verified API docs are available.
+    'kuda' => [
+        'client_id' => env('KUDA_CLIENT_ID'),
+        'client_secret' => env('KUDA_CLIENT_SECRET'),
+        'sandbox' => env('KUDA_SANDBOX', true),
+    ],
+
 ];

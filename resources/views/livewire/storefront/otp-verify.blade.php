@@ -7,7 +7,7 @@
             <h1 class="text-xl font-bold text-gray-900">Pay your delivery fee</h1>
             <p class="text-sm text-gray-500 mt-2">
                 Order #{{ $order->order_number }}'s delivery fee of <span class="font-semibold text-gray-900">{{ naira($order->delivery_fee_total) }}</span>
-                is paid online via OPay before your order can be confirmed. Your items themselves stay cash on delivery, as usual.
+                is paid online before your order can be confirmed. Your items themselves stay cash on delivery, as usual.
             </p>
 
             @if (session('delivery_fee_status') === 'failed')
@@ -16,9 +16,18 @@
                 </div>
             @endif
 
+            @if ($error)
+                <div class="mt-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-2 text-sm">{{ $error }}</div>
+            @endif
+
+            <div class="mt-6 text-left">
+                <p class="text-sm font-medium text-gray-700 mb-3">Pay with</p>
+                <x-payment-gateway-picker :selected="$selectedGateway" :gateways="\App\Enums\PaymentGateway::cases()" />
+            </div>
+
             <button wire:click="payDeliveryFee" wire:loading.attr="disabled" class="mt-6 w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60">
-                <span wire:loading.remove wire:target="payDeliveryFee">Pay {{ naira($order->delivery_fee_total) }} with OPay &rarr;</span>
-                <span wire:loading wire:target="payDeliveryFee">Redirecting to OPay…</span>
+                <span wire:loading.remove wire:target="payDeliveryFee">Pay {{ naira($order->delivery_fee_total) }} with {{ \App\Enums\PaymentGateway::from($selectedGateway)->label() }} &rarr;</span>
+                <span wire:loading wire:target="payDeliveryFee">Redirecting…</span>
             </button>
         @else
             <div class="mx-auto h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
@@ -31,7 +40,7 @@
 
             @if ($order->delivery_fee_total > 0)
                 <div class="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2 text-sm">
-                    Delivery fee of {{ naira($order->delivery_fee_total) }} paid via OPay.
+                    Delivery fee of {{ naira($order->delivery_fee_total) }} paid.
                 </div>
             @endif
 

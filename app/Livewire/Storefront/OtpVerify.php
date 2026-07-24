@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Storefront;
 
+use App\Enums\PaymentGateway;
 use App\Models\Order;
 use App\Services\DeliveryFeePaymentService;
 use App\Services\OrderService;
@@ -20,6 +21,10 @@ class OtpVerify extends Component
 
     public bool $resent = false;
 
+    public string $selectedGateway = 'opay';
+
+    public ?string $error = null;
+
     public function mount(Order $order): void
     {
         abort_unless($order->user_id === auth()->id(), 403);
@@ -28,10 +33,20 @@ class OtpVerify extends Component
 
     public function payDeliveryFee(DeliveryFeePaymentService $deliveryFeePayments)
     {
-        $url = $deliveryFeePayments->initialize(
-            $this->order,
-            route('storefront.orders.delivery-fee.callback', $this->order->order_number),
-        );
+        $this->error = null;
+
+        try {
+            $url = $deliveryFeePayments->initialize(
+                $this->order,
+                PaymentGateway::from($this->selectedGateway),
+                route('storefront.orders.delivery-fee.callback', $this->order->order_number),
+            );
+        } catch (\Throwable $e) {
+            report($e);
+            $this->error = 'We could not start the payment right now. Please try again shortly.';
+
+            return null;
+        }
 
         return $this->redirect($url, navigate: false);
     }

@@ -18,6 +18,16 @@
         <div class="mb-6 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{{ $error }}</div>
     @endif
 
+    @if ($virtualAccount)
+        <div class="mb-6 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 px-4 py-4 text-sm">
+            <p class="font-semibold mb-2">Transfer to activate your subscription</p>
+            <p>Account Number: <span class="font-mono font-semibold">{{ $virtualAccount['account_number'] }}</span></p>
+            <p>Bank: <span class="font-semibold">{{ $virtualAccount['bank_name'] }}</span></p>
+            <p>Account Name: <span class="font-semibold">{{ $virtualAccount['account_name'] }}</span></p>
+            <p class="text-xs text-blue-700 mt-2">Your subscription activates automatically once the transfer is confirmed.</p>
+        </div>
+    @endif
+
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-8">
         @if ($activeSubscription)
             <div class="flex items-center gap-3">
@@ -60,22 +70,13 @@
         </div>
 
         <div class="mb-6">
-            <p class="text-sm font-medium text-gray-700 mb-2">Pay with</p>
-            <div class="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
-                <button type="button" wire:click="$set('selectedGateway', 'paystack')"
-                    class="px-4 py-1.5 text-sm font-medium rounded-md transition {{ $selectedGateway === 'paystack' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700' }}">
-                    Paystack
-                </button>
-                <button type="button" wire:click="$set('selectedGateway', 'opay')"
-                    class="px-4 py-1.5 text-sm font-medium rounded-md transition {{ $selectedGateway === 'opay' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700' }}">
-                    OPay
-                </button>
-            </div>
+            <p class="text-sm font-medium text-gray-700 mb-3">Pay with</p>
+            <x-payment-gateway-picker :selected="$selectedGateway" :gateways="\App\Enums\PaymentGateway::cases()" />
         </div>
 
         <button wire:click="subscribe" wire:loading.attr="disabled"
             class="w-full sm:w-auto bg-green-700 hover:bg-green-800 text-white font-semibold px-6 py-3 rounded-lg disabled:opacity-60">
-            <span wire:loading.remove wire:target="subscribe">Pay with {{ $selectedGateway === 'opay' ? 'OPay' : 'Paystack' }} &rarr;</span>
+            <span wire:loading.remove wire:target="subscribe">Pay with {{ \App\Enums\PaymentGateway::from($selectedGateway)->label() }} &rarr;</span>
             <span wire:loading wire:target="subscribe">Redirecting…</span>
         </button>
     </div>

@@ -14,15 +14,17 @@ class SubscriptionService
 {
     public function __construct(
         private PaymentGatewayManager $gateways,
-        private PaystackClient $paystack,
-        private OpayClient $opay,
     ) {}
 
     /**
      * Create a pending subscription row and start a transaction with the
-     * chosen gateway. Returns the URL the vendor should be redirected to.
+     * chosen gateway. Returns a normalized result the caller can act on
+     * regardless of which gateway was used:
+     *   ['type' => 'redirect', 'url' => string] - send the vendor's browser here
+     *   ['type' => 'virtual_account', 'account_number' => ..., 'bank_name' => ...,
+     *    'account_name' => ...] - show these details for the vendor to transfer into
      */
-    public function initialize(Vendor $vendor, SubscriptionPlan $plan, PaymentGateway $gateway, string $returnUrl): string
+    public function initialize(Vendor $vendor, SubscriptionPlan $plan, PaymentGateway $gateway, string $returnUrl): array
     {
         $reference = 'sub_'.$vendor->id.'_'.Str::random(16);
 
@@ -34,13 +36,44 @@ class SubscriptionService
             'status' => SubscriptionStatus::Pending,
             'reference' => $reference,
         ]);
-        
+
         $client = $this->gateways->client($gateway);
 
-        if ($gateway === PaymentGateway::Opay) {
-            // Append our reference explicitly rather than relying on however
-            // OPay names its own query params on redirect back.
-            $opayReturnUrl = $returnUrl.(str_contains($returnUrl, '?') ? '&' : '?').'reference='.$reference;
+        return match ($gateway) {
+            PaymentGateway::Opay => $this->initializeOpay($client, $vendor, $subscription, $reference, $returnUrl),
+            PaymentGateway::Kuda => $this->initializeVirtualAccount($client, $vendor, $subscription, $reference, $returnUrl),
+            default => $this->initializeRedirect($client, $vendor, $subscription, $reference, $returnUrl),
+        };
+    }
+
+    /**
+     * Paystack, Monnify, PalmPay (once real) - all share the same
+     * "email + metadata in, authorization_url/checkoutUrl out" shape.
+     */
+    private function initializeRedirect($client, Vendor $vendor, VendorSubscription $subscription, string $reference, string $returnUrl): array
+    {
+        $data = $client->initialize(
+            reference: $reference,
+            amountKobo: $subscription->amount,
+            returnUrl: $returnUrl,
+            context: [
+                'email' => $vendor->user->email,
+                'customerName' => $vendor->business_name,
+                'metadata' => [
+                    'vendor_id' => $vendor->id,
+                    'plan' => $subscription->plan->value,
+                ],
+            ],
+        );
+
+        return ['type' => 'redirect', 'url' => $data['authorization_url'] ?? $data['checkoutUrl']];
+    }
+
+    private function initializeOpay(OpayClient $client, Vendor $vendor, VendorSubscription $subscription, string $reference, string $returnUrl): array
+    {
+        // Append our reference explicitly rather than relying on however
+        // OPay names its own query params on redirect back.
+        $opayReturnUrl = $returnUrl.(str_contains($returnUrl, '?') ? '&' : '?').'reference='.$reference;
 
         $data = $client->initialize(
             reference: $reference,
@@ -57,23 +90,31 @@ class SubscriptionService
             ],
         );
 
-            return $data['cashierUrl'];
-        }
+        return ['type' => 'redirect', 'url' => $data['cashierUrl']];
+    }
 
+    /**
+     * Kuda: no redirect - the client returns virtual account details for
+     * the vendor to transfer into directly.
+     */
+    private function initializeVirtualAccount($client, Vendor $vendor, VendorSubscription $subscription, string $reference, string $returnUrl): array
+    {
         $data = $client->initialize(
             reference: $reference,
             amountKobo: $subscription->amount,
             returnUrl: $returnUrl,
             context: [
                 'email' => $vendor->user->email,
-                'metadata' => [
-                    'vendor_id' => $vendor->id,
-                    'plan' => $plan->value,
-                ],
+                'customerName' => $vendor->business_name,
             ],
         );
 
-        return $data['authorization_url'];
+        return [
+            'type' => 'virtual_account',
+            'account_number' => $data['account_number'],
+            'bank_name' => $data['bank_name'],
+            'account_name' => $data['account_name'],
+        ];
     }
 
     /**

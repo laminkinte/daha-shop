@@ -1,16 +1,21 @@
 <?php
 
+use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\VendorDocumentController;
 use App\Http\Controllers\Storefront\DeliveryFeeCallbackController;
 use App\Http\Controllers\Vendor\SubscriptionCallbackController;
+use App\Http\Controllers\Webhooks\MonnifyWebhookController;
 use App\Http\Controllers\Webhooks\OpayWebhookController;
 use App\Http\Controllers\Webhooks\PaystackWebhookController;
+use App\Livewire\Admin\AdminManager;
 use App\Livewire\Admin\AgentManager;
 use App\Livewire\Admin\BlacklistManager;
+use App\Livewire\Admin\BusinessSettings;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\DeliveryZoneManager;
 use App\Livewire\Admin\DispatchBoard;
 use App\Livewire\Admin\OrderOverview;
+use App\Livewire\Admin\PayoutOverview;
 use App\Livewire\Admin\ProductApprovals;
 use App\Livewire\Admin\ReconciliationDashboard;
 use App\Livewire\Admin\VendorApprovals;
@@ -63,18 +68,25 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 
 Route::post('/webhooks/paystack', PaystackWebhookController::class)->name('webhooks.paystack');
 Route::post('/webhooks/opay', OpayWebhookController::class)->name('webhooks.opay');
+Route::post('/webhooks/monnify', MonnifyWebhookController::class)->name('webhooks.monnify');
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboard::class)->name('dashboard');
-    Route::get('/vendors', VendorApprovals::class)->name('vendors');
-    Route::get('/vendors/{vendor}/document/{type}', [VendorDocumentController::class, 'show'])->name('vendors.document');
-    Route::get('/products', ProductApprovals::class)->name('products');
-    Route::get('/orders', OrderOverview::class)->name('orders');
-    Route::get('/dispatch', DispatchBoard::class)->name('dispatch');
-    Route::get('/reconciliation', ReconciliationDashboard::class)->name('reconciliation');
-    Route::get('/agents', AgentManager::class)->name('agents');
-    Route::get('/delivery-zones', DeliveryZoneManager::class)->name('delivery-zones');
-    Route::get('/blacklist', BlacklistManager::class)->name('blacklist');
+    Route::get('/vendors', VendorApprovals::class)->name('vendors')->middleware('admin.permission:vendors');
+    Route::get('/vendors/{vendor}/document/{type}', [VendorDocumentController::class, 'show'])->name('vendors.document')->middleware('admin.permission:vendors');
+    Route::get('/products', ProductApprovals::class)->name('products')->middleware('admin.permission:products');
+    Route::get('/orders', OrderOverview::class)->name('orders')->middleware('admin.permission:orders');
+    Route::get('/orders/export', [ExportController::class, 'orders'])->name('orders.export')->middleware('admin.permission:orders');
+    Route::get('/dispatch', DispatchBoard::class)->name('dispatch')->middleware('admin.permission:dispatch');
+    Route::get('/reconciliation', ReconciliationDashboard::class)->name('reconciliation')->middleware('admin.permission:reconciliation');
+    Route::get('/reconciliation/export', [ExportController::class, 'reconciliation'])->name('reconciliation.export')->middleware('admin.permission:reconciliation');
+    Route::get('/agents', AgentManager::class)->name('agents')->middleware('admin.permission:agents');
+    Route::get('/delivery-zones', DeliveryZoneManager::class)->name('delivery-zones')->middleware('admin.permission:delivery-zones');
+    Route::get('/blacklist', BlacklistManager::class)->name('blacklist')->middleware('admin.permission:blacklist');
+    Route::get('/payouts', PayoutOverview::class)->name('payouts')->middleware('admin.permission:payouts');
+    Route::get('/payouts/export', [ExportController::class, 'payouts'])->name('payouts.export')->middleware('admin.permission:payouts');
+    Route::get('/settings', BusinessSettings::class)->name('settings')->middleware('admin.permission:settings');
+    Route::get('/admins', AdminManager::class)->name('admins')->middleware('super-admin');
 });
 
 Route::middleware(['auth', 'role:agent'])->prefix('agent')->name('agent.')->group(function () {

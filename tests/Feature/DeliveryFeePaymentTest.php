@@ -178,6 +178,79 @@ class DeliveryFeePaymentTest extends TestCase
         $this->assertTrue($order->fresh()->deliveryFeePaid());
     }
 
+    public function test_paying_delivery_fee_via_paystack_unlocks_order_confirmation(): void
+    {
+        $order = $this->placeOrderWithDeliveryFee();
+
+        Http::fake([
+            'api.paystack.co/transaction/initialize' => Http::response([
+                'status' => true,
+                'data' => ['authorization_url' => 'https://checkout.paystack.com/delfee1', 'reference' => 'delfee_x'],
+            ], 200),
+            'api.paystack.co/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => ['status' => 'success'],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($order->user)
+            ->test(OtpVerify::class, ['order' => $order])
+            ->set('selectedGateway', 'paystack')
+            ->call('payDeliveryFee')
+            ->assertRedirect('https://checkout.paystack.com/delfee1');
+
+        $payment = DeliveryFeePayment::where('order_id', $order->id)->firstOrFail();
+        $this->assertSame(\App\Enums\PaymentGateway::Paystack, $payment->gateway);
+
+        $this->actingAs($order->user)
+            ->get(route('storefront.orders.delivery-fee.callback', ['order' => $order->order_number, 'reference' => $payment->reference]))
+            ->assertRedirect(route('storefront.orders.confirm', $order->order_number));
+
+        $order->refresh();
+        $this->assertTrue($order->deliveryFeePaid());
+        $this->assertSame(DeliveryFeePaymentStatus::Paid, $payment->fresh()->status);
+    }
+
+    public function test_paying_delivery_fee_via_monnify_unlocks_order_confirmation(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('monnify_access_token');
+        config(['services.monnify.api_key' => 'MK_TEST_KEY', 'services.monnify.secret_key' => 'monnify_test_secret']);
+
+        $order = $this->placeOrderWithDeliveryFee();
+
+        Http::fake([
+            'sandbox.monnify.com/api/v1/auth/login' => Http::response([
+                'requestSuccessful' => true,
+                'responseBody' => ['accessToken' => 'fake-token'],
+            ], 200),
+            'sandbox.monnify.com/api/v1/merchant/transactions/init-transaction' => Http::response([
+                'requestSuccessful' => true,
+                'responseBody' => ['checkoutUrl' => 'https://sandbox.monnify.com/checkout/delfee1', 'paymentReference' => 'delfee_x'],
+            ], 200),
+            'sandbox.monnify.com/api/v2/transactions/*' => Http::response([
+                'requestSuccessful' => true,
+                'responseBody' => ['paymentStatus' => 'PAID'],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($order->user)
+            ->test(OtpVerify::class, ['order' => $order])
+            ->set('selectedGateway', 'monnify')
+            ->call('payDeliveryFee')
+            ->assertRedirect('https://sandbox.monnify.com/checkout/delfee1');
+
+        $payment = DeliveryFeePayment::where('order_id', $order->id)->firstOrFail();
+        $this->assertSame(\App\Enums\PaymentGateway::Monnify, $payment->gateway);
+
+        $this->actingAs($order->user)
+            ->get(route('storefront.orders.delivery-fee.callback', ['order' => $order->order_number, 'reference' => $payment->reference]))
+            ->assertRedirect(route('storefront.orders.confirm', $order->order_number));
+
+        $order->refresh();
+        $this->assertTrue($order->deliveryFeePaid());
+        $this->assertSame(DeliveryFeePaymentStatus::Paid, $payment->fresh()->status);
+    }
+
     public function test_order_with_no_delivery_fee_skips_the_payment_step_entirely(): void
     {
         $this->seed(NigeriaGeographySeeder::class);
