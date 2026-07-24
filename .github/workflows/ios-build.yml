@@ -1,0 +1,62 @@
+name: iOS build check
+
+# Compiles the Capacitor iOS app on a real macOS runner, without code
+# signing - proves the native shell builds correctly. It does NOT install
+# on a device, produce a distributable .ipa, or need an Apple Developer
+# account - that only becomes necessary once you're ready to sign for
+# TestFlight/App Store (see docs/DEVELOPER_TASKS.md for the iOS build
+# path options: Ionic Appflow, a rented cloud Mac, or extending this same
+# workflow with real signing credentials as GitHub secrets).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - "capacitor.config.json"
+      - "package.json"
+      - "package-lock.json"
+      - "resources/js/**"
+      - ".github/workflows/ios-build.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - "capacitor.config.json"
+      - "package.json"
+      - "package-lock.json"
+      - "resources/js/**"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Sync Capacitor iOS project
+        run: npx cap sync ios
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build for the iOS Simulator (no code signing)
+        working-directory: ios/App
+        run: |
+          xcodebuild build \
+            -project App.xcodeproj \
+            -scheme App \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO

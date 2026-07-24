@@ -32,3 +32,10 @@ Thumbs.db
 /android/.idea
 *.apk
 *.aab
+
+# iOS / Capacitor
+/ios/App/Pods
+/ios/App/build
+/ios/DerivedData
+**/xcuserdata/
+*.ipa
