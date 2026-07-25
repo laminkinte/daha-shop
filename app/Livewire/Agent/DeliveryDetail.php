@@ -3,7 +3,10 @@
 namespace App\Livewire\Agent;
 
 use App\Enums\DeliveryFailureReason;
+use App\Enums\DeliveryPaymentStatus;
+use App\Enums\VendorOrderStatus;
 use App\Models\VendorOrder;
+use App\Services\DeliveryPaymentService;
 use App\Services\VendorOrderService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -25,17 +28,64 @@ class DeliveryDetail extends Component
 
     public string $failureReason = 'customer_unreachable';
 
-    // Stopgap default so the view (which references this) doesn't fatal on
-    // an undefined variable - startPayment()/refreshPaymentStatus() are not
-    // implemented yet, this only stops the crash. See Kambaza2003's
-    // "implement QR and manual delivery payments" commit - this feature
-    // still needs finishing on the component side.
     public string $paymentMethod = 'qr';
+
+    public string $customerPhone = '';
+
+    public ?string $error = null;
 
     public function mount(int $vendorOrderId): void
     {
-        $this->vendorOrder = Auth::user()->deliveryAgent->vendorOrders()->with('order.address', 'vendor', 'items')->findOrFail($vendorOrderId);
+        $this->vendorOrder = Auth::user()->deliveryAgent->vendorOrders()->with('order.address', 'vendor', 'items', 'deliveryPayment')->findOrFail($vendorOrderId);
         $this->cashCollected = number_format($this->vendorOrder->cashDueAtDelivery() / 100, 2, '.', '');
+    }
+
+    /**
+     * Starts (or retries) digital collection of payment at the door -
+     * completes Kambaza2003's "implement QR and manual delivery payments"
+     * commit, which added DeliveryPaymentService/DeliveryPayment but never
+     * wired this component up to call it.
+     */
+    public function startPayment(DeliveryPaymentService $service): void
+    {
+        $this->error = null;
+
+        if ($this->paymentMethod === 'manual') {
+            $this->validate(['customerPhone' => 'required|string']);
+        }
+
+        try {
+            $service->initialize($this->vendorOrder, $this->paymentMethod, $this->customerPhone ?: null);
+        } catch (\Throwable $e) {
+            report($e);
+            $this->error = 'We could not start the payment right now. Please try again shortly.';
+
+            return;
+        }
+
+        $this->vendorOrder->refresh()->load('deliveryPayment');
+    }
+
+    /**
+     * Polled every 5s by the view while a payment is pending, in case the
+     * OPay webhook hasn't landed yet - re-verifies directly and redirects
+     * once the order is confirmed delivered.
+     */
+    public function refreshPaymentStatus(DeliveryPaymentService $service): void
+    {
+        $payment = $this->vendorOrder->deliveryPayment;
+
+        if (! $payment || $payment->status !== DeliveryPaymentStatus::Pending) {
+            return;
+        }
+
+        $service->verifyAndComplete($payment->reference);
+
+        $this->vendorOrder->refresh()->load('deliveryPayment');
+
+        if ($this->vendorOrder->status === VendorOrderStatus::Delivered) {
+            $this->redirect(route('agent.deliveries'), navigate: true);
+        }
     }
 
     public function markDelivered(VendorOrderService $service)

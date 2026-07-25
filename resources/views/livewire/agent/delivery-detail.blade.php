@@ -13,6 +13,9 @@
 
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6" wire:poll.5s="refreshPaymentStatus">
         <h3 class="font-semibold text-gray-800 mb-4">Collect Digital Payment</h3>
+        @if ($error)
+            <div class="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-2 text-sm mb-4">{{ $error }}</div>
+        @endif
         @if ($vendorOrder->deliveryPayment)
             <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 mb-4">
                 <p class="font-semibold text-amber-900">{{ ucfirst($vendorOrder->deliveryPayment->status->value) }} payment</p>
