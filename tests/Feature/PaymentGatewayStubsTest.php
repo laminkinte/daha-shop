@@ -82,4 +82,35 @@ class PaymentGatewayStubsTest extends TestCase
         $this->assertInstanceOf(\App\Services\OpayClient::class, $manager->client(PaymentGateway::Opay));
         $this->assertInstanceOf(\App\Services\PaystackClient::class, $manager->client(PaymentGateway::Paystack));
     }
+
+    public function test_test_gateway_resolves_in_testing_environment(): void
+    {
+        $this->assertInstanceOf(
+            \App\Services\TestPaymentGatewayClient::class,
+            app(PaymentGatewayManager::class)->client(PaymentGateway::Test),
+        );
+    }
+
+    public function test_test_gateway_is_refused_outside_local_and_testing(): void
+    {
+        app()->detectEnvironment(fn () => 'production');
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        app(PaymentGatewayManager::class)->client(PaymentGateway::Test);
+    }
+
+    public function test_subscribing_with_the_test_gateway_completes_without_any_real_api_call(): void
+    {
+        $vendor = $this->makeVendor();
+
+        Livewire::actingAs($vendor->user)
+            ->test(Subscription::class)
+            ->set('selectedGateway', 'test')
+            ->call('subscribe')
+            ->assertHasNoErrors();
+
+        $subscription = \App\Models\VendorSubscription::where('vendor_id', $vendor->id)->firstOrFail();
+        $this->assertSame(PaymentGateway::Test, $subscription->gateway);
+    }
 }

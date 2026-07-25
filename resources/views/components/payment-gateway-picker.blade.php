@@ -1,7 +1,16 @@
 @props(['selected', 'gateways'])
 
+@php
+    // The "Test (Dev Only)" gateway only ever works in local/testing (see
+    // PaymentGatewayManager) - hide it from the picker everywhere else so
+    // it's never even visible as an option in production.
+    $visibleGateways = collect($gateways)
+        ->reject(fn ($gateway) => $gateway === \App\Enums\PaymentGateway::Test && ! app()->environment(['local', 'testing']))
+        ->values();
+@endphp
+
 <div class="grid grid-cols-2 gap-3">
-    @foreach ($gateways as $gateway)
+    @foreach ($visibleGateways as $gateway)
         <button type="button" wire:click="$set('selectedGateway', '{{ $gateway->value }}')"
             class="flex items-center gap-3 rounded-xl border-2 p-3 transition text-left {{ $selected === $gateway->value ? 'border-green-600 bg-green-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300' }}">
             <span class="h-10 w-10 shrink-0 rounded-lg flex items-center justify-center text-white font-bold text-xs tracking-wide {{ $gateway->badgeColorClass() }}">

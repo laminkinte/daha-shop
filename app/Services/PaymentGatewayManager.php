@@ -13,6 +13,7 @@ class PaymentGatewayManager
         private MonnifyClient $monnify,
         private PalmPayClient $palmPay,
         private KudaClient $kuda,
+        private TestPaymentGatewayClient $test,
     ) {}
 
     public function client(PaymentGateway $gateway): PaymentGatewayClient
@@ -23,6 +24,11 @@ class PaymentGatewayManager
             PaymentGateway::Monnify => $this->monnify,
             PaymentGateway::PalmPay => $this->palmPay,
             PaymentGateway::Kuda => $this->kuda,
+            // Never reachable outside local/testing, even if a form is
+            // tampered with to submit gateway=test - see TestPaymentGatewayClient.
+            PaymentGateway::Test => app()->environment(['local', 'testing'])
+                ? $this->test
+                : throw new InvalidArgumentException('Unsupported payment gateway.'),
             default => throw new InvalidArgumentException('Unsupported payment gateway.'),
         };
     }

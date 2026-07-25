@@ -9,6 +9,7 @@ enum PaymentGateway: string
     case Monnify = 'monnify';
     case PalmPay = 'palmpay';
     case Kuda = 'kuda';
+    case Test = 'test';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum PaymentGateway: string
             self::Monnify => 'Monnify',
             self::PalmPay => 'PalmPay',
             self::Kuda => 'Kuda',
+            self::Test => 'Test (Dev Only)',
         };
     }
 
@@ -33,6 +35,7 @@ enum PaymentGateway: string
             self::Monnify => 'MF',
             self::PalmPay => 'PP',
             self::Kuda => 'KU',
+            self::Test => 'TX',
         };
     }
 
@@ -48,6 +51,7 @@ enum PaymentGateway: string
             self::Monnify => 'bg-[#1A73E8]',
             self::PalmPay => 'bg-[#6C2EB9]',
             self::Kuda => 'bg-[#2E1760]',
+            self::Test => 'bg-gray-500',
         };
     }
 }

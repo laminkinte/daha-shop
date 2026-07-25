@@ -125,6 +125,31 @@ class DeliveryFeePaymentTest extends TestCase
         $this->assertSame(DeliveryFeePaymentStatus::Paid, $payment->fresh()->status);
     }
 
+    public function test_paying_delivery_fee_via_the_test_gateway_unlocks_order_confirmation(): void
+    {
+        $order = $this->placeOrderWithDeliveryFee();
+
+        Livewire::actingAs($order->user)
+            ->test(OtpVerify::class, ['order' => $order])
+            ->set('selectedGateway', 'test')
+            ->call('payDeliveryFee')
+            ->assertRedirect();
+
+        $payment = DeliveryFeePayment::where('order_id', $order->id)->firstOrFail();
+        $this->assertSame(\App\Enums\PaymentGateway::Test, $payment->gateway);
+
+        // The Test gateway's "redirect" points straight back at our own
+        // callback URL with the reference attached - simulate the browser
+        // actually following it, exactly like a real gateway would.
+        $this->actingAs($order->user)
+            ->get(route('storefront.orders.delivery-fee.callback', ['order' => $order->order_number, 'reference' => $payment->reference]))
+            ->assertRedirect(route('storefront.orders.confirm', $order->order_number));
+
+        $order->refresh();
+        $this->assertTrue($order->deliveryFeePaid());
+        $this->assertSame(DeliveryFeePaymentStatus::Paid, $payment->fresh()->status);
+    }
+
     public function test_webhook_can_also_confirm_delivery_fee_payment(): void
     {
         config(['services.opay.secret_key' => 'opay_test_secret']);
