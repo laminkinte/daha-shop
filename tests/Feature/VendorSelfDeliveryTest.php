@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\DeliveryPaymentStatus;
+use App\Enums\PaymentGateway;
 use App\Enums\VendorOrderStatus;
 use App\Enums\VendorStatus;
 use App\Livewire\Admin\DispatchBoard;
@@ -161,5 +162,40 @@ class VendorSelfDeliveryTest extends TestCase
 
         $this->assertSame($vendorOrder->items_subtotal, $payout->total_amount);
         $this->assertSame($payout->id, $vendorOrder->fresh()->vendor_payout_id);
+    }
+
+    /**
+     * Regression test: without real OPay merchant credentials configured
+     * (the normal case for local dev), starting a digital payment used to
+     * throw and no QR ever rendered on the vendor's order list either. The
+     * vendor can now select the local-only Test gateway per-order and
+     * complete the flow with no external API calls at all.
+     */
+    public function test_vendor_completes_self_delivery_payment_using_the_local_test_gateway(): void
+    {
+        $vendorOrder = $this->makePackedVendorOrder();
+        $vendor = $vendorOrder->vendor;
+
+        Livewire::actingAs($vendor->user)
+            ->test(OrderManager::class)
+            ->call('deliverMyself', $vendorOrder->id);
+
+        Livewire::actingAs($vendor->user)
+            ->test(OrderManager::class)
+            ->set("gateway.{$vendorOrder->id}", 'test')
+            ->call('startDigitalPayment', $vendorOrder->id)
+            ->assertHasNoErrors();
+
+        $payment = DeliveryPayment::where('vendor_order_id', $vendorOrder->id)->firstOrFail();
+        $this->assertSame(PaymentGateway::Test, $payment->gateway);
+        $this->assertNotNull($payment->cashier_url);
+
+        Livewire::actingAs($vendor->user)
+            ->test(OrderManager::class)
+            ->call('refreshPendingPayments');
+
+        $vendorOrder->refresh();
+        $this->assertSame(VendorOrderStatus::Delivered, $vendorOrder->status);
+        $this->assertSame(DeliveryPaymentStatus::Paid, $payment->fresh()->status);
     }
 }

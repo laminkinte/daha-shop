@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\AgentAvailability;
 use App\Enums\DeliveryPaymentStatus;
+use App\Enums\PaymentGateway;
 use App\Enums\VendorOrderStatus;
 use App\Enums\VendorStatus;
 use App\Livewire\Agent\DeliveryDetail;
@@ -193,5 +194,108 @@ class DeliveryPaymentTest extends TestCase
             ->assertNoRedirect();
 
         $this->assertSame(VendorOrderStatus::OutForDelivery, $vendorOrder->fresh()->status);
+    }
+
+    /**
+     * Regression test: DeliveryPaymentService used to be hardcoded to
+     * OpayClient, so without real OPay merchant credentials configured
+     * (the normal case for local dev) starting a payment threw and no QR
+     * ever rendered. It's now gateway-aware, so agents/vendors can select
+     * the local-only Test gateway and complete the flow with no external
+     * API calls at all.
+     */
+    public function test_agent_can_complete_a_delivery_payment_using_the_local_test_gateway(): void
+    {
+        $vendorOrder = $this->makeAssignedVendorOrder();
+
+        Livewire::actingAs($vendorOrder->deliveryAgent->user)
+            ->test(DeliveryDetail::class, ['vendorOrderId' => $vendorOrder->id])
+            ->set('paymentMethod', 'qr')
+            ->set('selectedGateway', 'test')
+            ->call('startPayment')
+            ->assertHasNoErrors();
+
+        $payment = DeliveryPayment::where('vendor_order_id', $vendorOrder->id)->firstOrFail();
+        $this->assertSame(PaymentGateway::Test, $payment->gateway);
+        $this->assertNotNull($payment->cashier_url);
+
+        Livewire::actingAs($vendorOrder->deliveryAgent->user)
+            ->test(DeliveryDetail::class, ['vendorOrderId' => $vendorOrder->id])
+            ->call('refreshPaymentStatus')
+            ->assertRedirect(route('agent.deliveries'));
+
+        $this->assertSame(DeliveryPaymentStatus::Paid, $payment->fresh()->status);
+        $this->assertSame(VendorOrderStatus::Delivered, $vendorOrder->fresh()->status);
+    }
+
+    /**
+     * Regression test: a payment stuck Pending against a broken gateway
+     * (e.g. real OPay with no credentials configured) used to trap the
+     * order forever - initialize() short-circuited on any Pending payment
+     * regardless of gateway, so there was no way to retry with a working
+     * gateway short of manually editing the database. Picking a different
+     * gateway now resets the same row in place instead.
+     */
+    public function test_switching_gateway_resets_a_stuck_pending_payment_in_place(): void
+    {
+        $vendorOrder = $this->makeAssignedVendorOrder();
+
+        $stuck = DeliveryPayment::create([
+            'vendor_order_id' => $vendorOrder->id,
+            'gateway' => PaymentGateway::Opay,
+            'reference' => 'delivery_'.$vendorOrder->id.'_stuck',
+            'amount' => 500000,
+            'method' => 'qr',
+            'status' => DeliveryPaymentStatus::Pending,
+        ]);
+
+        Livewire::actingAs($vendorOrder->deliveryAgent->user)
+            ->test(DeliveryDetail::class, ['vendorOrderId' => $vendorOrder->id])
+            ->set('paymentMethod', 'qr')
+            ->set('selectedGateway', 'test')
+            ->call('startPayment')
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, DeliveryPayment::where('vendor_order_id', $vendorOrder->id)->count());
+
+        $payment = $stuck->fresh();
+        $this->assertSame(PaymentGateway::Test, $payment->gateway);
+        $this->assertNotSame('delivery_'.$vendorOrder->id.'_stuck', $payment->reference);
+        $this->assertNotNull($payment->cashier_url);
+    }
+
+    /**
+     * Regression test: a gateway API failure during the 5s polling loop
+     * used to bubble up as an uncaught RuntimeException and 500 the whole
+     * Livewire request - repeating on every poll tick until the underlying
+     * gateway config was fixed. It must now fail quietly and leave the
+     * payment retryable instead of crashing the page.
+     */
+    public function test_refreshing_payment_status_does_not_crash_when_the_gateway_call_fails(): void
+    {
+        $vendorOrder = $this->makeAssignedVendorOrder();
+
+        DeliveryPayment::create([
+            'vendor_order_id' => $vendorOrder->id,
+            'gateway' => PaymentGateway::Opay,
+            'reference' => 'delivery_'.$vendorOrder->id.'_broken',
+            'amount' => 500000,
+            'method' => 'qr',
+            'status' => DeliveryPaymentStatus::Pending,
+        ]);
+
+        Http::fake([
+            'sandboxapi.opaycheckout.com/api/v1/international/cashier/status' => Http::response([
+                'code' => '02000',
+                'message' => 'missing request header [MerchantId]',
+            ], 400),
+        ]);
+
+        Livewire::actingAs($vendorOrder->deliveryAgent->user)
+            ->test(DeliveryDetail::class, ['vendorOrderId' => $vendorOrder->id])
+            ->call('refreshPaymentStatus')
+            ->assertNoRedirect();
+
+        $this->assertSame(DeliveryPaymentStatus::Pending, $vendorOrder->fresh()->deliveryPayment->status);
     }
 }

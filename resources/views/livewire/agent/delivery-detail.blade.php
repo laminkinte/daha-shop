@@ -41,6 +41,10 @@
                     @error('customerPhone') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                 </div>
             @endif
+            <div>
+                <label class="text-sm font-medium text-gray-700 mb-2 block">Pay with</label>
+                <x-payment-gateway-picker :selected="$selectedGateway" :gateways="\App\Enums\PaymentGateway::cases()" />
+            </div>
             <button wire:click="startPayment" wire:loading.attr="disabled" class="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60">
                 {{ $vendorOrder->deliveryPayment?->status?->value === 'failed' ? 'Retry Payment' : 'Start Payment' }}
             </button>

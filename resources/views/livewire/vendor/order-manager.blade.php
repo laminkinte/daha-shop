@@ -100,6 +100,10 @@
                                     @error("customerPhone.{$vendorOrder->id}") <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                                 </div>
                             @endif
+                            <div>
+                                <label class="text-xs font-medium text-gray-600 mb-1.5 block">Pay with</label>
+                                <x-payment-gateway-picker :selected="$gateway[$vendorOrder->id] ?? 'opay'" :gateways="\App\Enums\PaymentGateway::cases()" :property="'gateway.'.$vendorOrder->id" />
+                            </div>
                             <button wire:click="startDigitalPayment({{ $vendorOrder->id }})" wire:loading.attr="disabled" class="w-full text-sm bg-green-700 hover:bg-green-800 text-white font-semibold py-2 rounded-lg transition-colors disabled:opacity-60">
                                 {{ $vendorOrder->deliveryPayment?->status?->value === 'failed' ? 'Retry Payment' : 'Start Payment' }}
                             </button>

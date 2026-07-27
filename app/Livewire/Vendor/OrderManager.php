@@ -3,6 +3,7 @@
 namespace App\Livewire\Vendor;
 
 use App\Enums\DeliveryPaymentStatus;
+use App\Enums\PaymentGateway;
 use App\Enums\VendorOrderStatus;
 use App\Models\VendorOrder;
 use App\Services\DeliveryPaymentService;
@@ -21,6 +22,9 @@ class OrderManager extends Component
 
     /** @var array<int, string> */
     public array $paymentMethod = [];
+
+    /** @var array<int, string> */
+    public array $gateway = [];
 
     /** @var array<int, string> */
     public array $customerPhone = [];
@@ -71,8 +75,10 @@ class OrderManager extends Component
             ]);
         }
 
+        $gateway = PaymentGateway::from($this->gateway[$vendorOrderId] ?? 'opay');
+
         try {
-            $service->initialize($vendorOrder, $method, $this->customerPhone[$vendorOrderId] ?? null);
+            $service->initialize($vendorOrder, $method, $this->customerPhone[$vendorOrderId] ?? null, $gateway);
         } catch (\Throwable $e) {
             report($e);
             $this->error = 'We could not start the payment right now. Please try again shortly.';

@@ -4,6 +4,7 @@ namespace App\Livewire\Agent;
 
 use App\Enums\DeliveryFailureReason;
 use App\Enums\DeliveryPaymentStatus;
+use App\Enums\PaymentGateway;
 use App\Enums\VendorOrderStatus;
 use App\Models\VendorOrder;
 use App\Services\DeliveryPaymentService;
@@ -30,6 +31,8 @@ class DeliveryDetail extends Component
 
     public string $paymentMethod = 'qr';
 
+    public string $selectedGateway = 'opay';
+
     public string $customerPhone = '';
 
     public ?string $error = null;
@@ -55,7 +58,7 @@ class DeliveryDetail extends Component
         }
 
         try {
-            $service->initialize($this->vendorOrder, $this->paymentMethod, $this->customerPhone ?: null);
+            $service->initialize($this->vendorOrder, $this->paymentMethod, $this->customerPhone ?: null, PaymentGateway::from($this->selectedGateway));
         } catch (\Throwable $e) {
             report($e);
             $this->error = 'We could not start the payment right now. Please try again shortly.';

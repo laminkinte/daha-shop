@@ -1,4 +1,4 @@
-@props(['selected', 'gateways'])
+@props(['selected', 'gateways', 'property' => 'selectedGateway'])
 
 @php
     // The "Test (Dev Only)" gateway only ever works in local/testing (see
@@ -11,7 +11,7 @@
 
 <div class="grid grid-cols-2 gap-3">
     @foreach ($visibleGateways as $gateway)
-        <button type="button" wire:click="$set('selectedGateway', '{{ $gateway->value }}')"
+        <button type="button" wire:click="$set('{{ $property }}', '{{ $gateway->value }}')"
             class="flex items-center gap-3 rounded-xl border-2 p-3 transition text-left {{ $selected === $gateway->value ? 'border-green-600 bg-green-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300' }}">
             <span class="h-10 w-10 shrink-0 rounded-lg flex items-center justify-center text-white font-bold text-xs tracking-wide {{ $gateway->badgeColorClass() }}">
                 {{ $gateway->initials() }}
