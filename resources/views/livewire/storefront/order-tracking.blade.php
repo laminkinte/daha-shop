@@ -122,6 +122,19 @@
                     <span>{{ $vendorOrder->isPickup() ? 'Delivery Fee (pickup - none)' : 'Delivery Fee (paid via OPay)' }}</span><span>{{ naira($vendorOrder->delivery_fee) }}</span>
                 </div>
             </div>
+
+            @if (in_array($vendorOrder->status->value, ['out_for_delivery', 'ready_for_pickup'], true))
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    @if ($vendorOrder->deliveryPayment?->status?->value === 'paid')
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">Payment received</span>
+                    @else
+                        <a href="{{ route('storefront.scan-to-pay') }}" wire:navigate
+                            class="block w-full text-center bg-green-700 hover:bg-green-800 text-white font-semibold py-2.5 rounded-lg transition-colors">
+                            Scan to Pay
+                        </a>
+                    @endif
+                </div>
+            @endif
         </div>
     @endforeach
 </div>

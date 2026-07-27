@@ -31,6 +31,7 @@ use App\Livewire\Storefront\OrderTracking;
 use App\Livewire\Storefront\OtpVerify;
 use App\Livewire\Storefront\ProductCatalog;
 use App\Livewire\Storefront\ProductDetail;
+use App\Livewire\Storefront\ScanToPay;
 use App\Livewire\Storefront\VendorShop;
 use App\Livewire\Storefront\Wishlist;
 use App\Livewire\Vendor\Dashboard as VendorDashboard;
@@ -55,6 +56,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders/{order}/confirm', OtpVerify::class)->name('storefront.orders.confirm');
     Route::get('/orders/{order}/delivery-fee/callback', DeliveryFeeCallbackController::class)->name('storefront.orders.delivery-fee.callback');
     Route::get('/orders/{order}', OrderTracking::class)->name('storefront.orders.show');
+    Route::get('/scan-to-pay', ScanToPay::class)->name('storefront.scan-to-pay');
 });
 
 Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->group(function () {

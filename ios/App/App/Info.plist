@@ -47,6 +47,8 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Daha Shop needs camera access to scan payment QR codes.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Dev-only: allows the app to load the local HTTP dev server
