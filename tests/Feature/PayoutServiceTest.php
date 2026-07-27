@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\AgentAvailability;
+use App\Enums\DeliveryPaymentStatus;
 use App\Enums\ReconciliationStatus;
 use App\Enums\VendorOrderStatus;
 use App\Enums\VendorStatus;
@@ -10,6 +11,7 @@ use App\Exceptions\NothingToPayoutException;
 use App\Models\CashReconciliation;
 use App\Models\Category;
 use App\Models\DeliveryAgent;
+use App\Models\DeliveryPayment;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Vendor;
@@ -132,5 +134,49 @@ class PayoutServiceTest extends TestCase
         $this->expectException(NothingToPayoutException::class);
 
         app(PayoutService::class)->generateForVendor($vendorOrder->vendor, now()->subDay(), now()->addDay());
+    }
+
+    public function test_digitally_paid_delivered_order_is_payout_eligible_with_no_cash_reconciliation_at_all(): void
+    {
+        $vendorOrder = $this->makeDeliveredVendorOrder();
+
+        DeliveryPayment::create([
+            'vendor_order_id' => $vendorOrder->id,
+            'reference' => 'delivery_'.$vendorOrder->id.'_ref',
+            'amount' => $vendorOrder->items_subtotal,
+            'method' => 'qr',
+            'status' => DeliveryPaymentStatus::Paid,
+            'paid_at' => now(),
+        ]);
+
+        $payout = app(PayoutService::class)->generateForVendor($vendorOrder->vendor, now()->subDay(), now()->addDay());
+
+        $this->assertSame($vendorOrder->items_subtotal, $payout->total_amount);
+        $this->assertSame($payout->id, $vendorOrder->fresh()->vendor_payout_id);
+        $this->assertNull($vendorOrder->cashReconciliation);
+    }
+
+    public function test_digitally_paid_pickup_order_is_payout_eligible(): void
+    {
+        $vendorOrder = $this->makeDeliveredVendorOrder();
+        $vendorOrder->update([
+            'status' => VendorOrderStatus::PickedUp,
+            'delivered_at' => null,
+            'picked_up_at' => now(),
+        ]);
+
+        DeliveryPayment::create([
+            'vendor_order_id' => $vendorOrder->id,
+            'reference' => 'delivery_'.$vendorOrder->id.'_ref',
+            'amount' => $vendorOrder->items_subtotal,
+            'method' => 'manual',
+            'status' => DeliveryPaymentStatus::Paid,
+            'paid_at' => now(),
+        ]);
+
+        $payout = app(PayoutService::class)->generateForVendor($vendorOrder->vendor, now()->subDay(), now()->addDay());
+
+        $this->assertSame($vendorOrder->items_subtotal, $payout->total_amount);
+        $this->assertSame($payout->id, $vendorOrder->fresh()->vendor_payout_id);
     }
 }

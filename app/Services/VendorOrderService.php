@@ -58,6 +58,22 @@ class VendorOrderService
         AgentAssignedToDelivery::dispatch($vendorOrder->fresh());
     }
 
+    /**
+     * The vendor delivers this themselves instead of waiting for an admin
+     * to assign a delivery agent - skips straight to OutForDelivery with no
+     * delivery_agent_id (that column is a real FK to delivery_agents, so it
+     * can never hold a "self" sentinel; null + OutForDelivery is the signal
+     * that the vendor is the one delivering). No AgentAssignedToDelivery
+     * event since there's no agent to notify.
+     */
+    public function assignSelfDelivery(VendorOrder $vendorOrder): void
+    {
+        $vendorOrder->update([
+            'status' => VendorOrderStatus::OutForDelivery,
+            'out_for_delivery_at' => now(),
+        ]);
+    }
+
     public function markOutForDelivery(VendorOrder $vendorOrder): void
     {
         $vendorOrder->update([

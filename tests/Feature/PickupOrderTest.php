@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\DeliveryPaymentStatus;
 use App\Enums\FulfillmentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\VendorOrderStatus;
@@ -11,6 +12,7 @@ use App\Livewire\Admin\DispatchBoard;
 use App\Livewire\Storefront\Checkout;
 use App\Livewire\Vendor\OrderManager;
 use App\Models\Category;
+use App\Models\DeliveryPayment;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\State;
@@ -21,6 +23,7 @@ use App\Services\VendorOrderService;
 use Database\Seeders\NigeriaGeographySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -153,8 +156,19 @@ class PickupOrderTest extends TestCase
         ]);
     }
 
-    public function test_vendor_can_mark_pickup_order_ready_then_confirm_picked_up_with_cash(): void
+    public function test_vendor_can_mark_pickup_order_ready_then_collect_payment_digitally(): void
     {
+        Http::fake([
+            'sandboxapi.opaycheckout.com/api/v1/international/cashier/create' => Http::response([
+                'code' => '00000',
+                'data' => ['reference' => 'x', 'cashierUrl' => 'https://sandboxcashier.opaycheckout.com/checkout/pickup1', 'status' => 'INITIAL'],
+            ], 200),
+            'sandboxapi.opaycheckout.com/api/v1/international/cashier/status' => Http::response([
+                'code' => '00000',
+                'data' => ['status' => 'SUCCESS'],
+            ], 200),
+        ]);
+
         $vendorOrder = $this->makePickupVendorOrder();
         $vendor = $vendorOrder->vendor;
 
@@ -168,16 +182,23 @@ class PickupOrderTest extends TestCase
 
         Livewire::actingAs($vendor->user)
             ->test(OrderManager::class)
-            ->set("pickupCash.{$vendorOrder->id}", '50000.00')
-            ->call('confirmPickedUp', $vendorOrder->id);
+            ->call('startDigitalPayment', $vendorOrder->id)
+            ->assertHasNoErrors();
+
+        $payment = DeliveryPayment::where('vendor_order_id', $vendorOrder->id)->firstOrFail();
+        $this->assertSame(DeliveryPaymentStatus::Pending, $payment->status);
+
+        Livewire::actingAs($vendor->user)
+            ->test(OrderManager::class)
+            ->call('refreshPendingPayments');
 
         $vendorOrder->refresh();
         $this->assertSame(VendorOrderStatus::PickedUp, $vendorOrder->status);
-        $this->assertSame(5000000, $vendorOrder->cash_collected);
+        $this->assertSame(DeliveryPaymentStatus::Paid, $payment->fresh()->status);
+        $this->assertSame(0, $vendorOrder->cash_collected);
         $this->assertNotNull($vendorOrder->picked_up_at);
 
         $this->assertSame(OrderStatus::Completed, $vendorOrder->order->fresh()->status);
-        $this->assertSame(5000000, $vendorOrder->order->fresh()->cod_amount_collected);
     }
 
     public function test_picked_up_order_creates_no_cash_reconciliation_for_an_agent(): void

@@ -16,6 +16,10 @@ class DeliveryPaymentCallbackController extends Controller
             $payments->verifyAndComplete($reference);
         }
 
-        return redirect()->route('agent.deliveries');
+        // Role-aware smart redirect (vendor -> vendor.dashboard, agent ->
+        // agent.deliveries, etc.) since this callback is now shared between
+        // agents completing a delivery and vendors completing self-delivery
+        // or pickup payment.
+        return redirect()->route('dashboard');
     }
 }

@@ -31,7 +31,7 @@ class DeliveryPaymentService
         $data = $this->opay->initialize(
             reference: $payment->reference,
             amountKobo: $payment->amount,
-            returnUrl: route('agent.delivery-payment.callback'),
+            returnUrl: route('delivery-payment.callback'),
             context: [
                 'callbackUrl' => route('webhooks.opay'),
                 'userInfo' => [
@@ -64,10 +64,14 @@ class DeliveryPaymentService
         DB::transaction(function () use ($payment, $proofPath) {
             $payment->update(['status' => DeliveryPaymentStatus::Paid, 'paid_at' => now()]);
             $vendorOrder = $payment->vendorOrder()->lockForUpdate()->first();
-            if ($vendorOrder->status !== VendorOrderStatus::Delivered) {
+            $isPickup = $vendorOrder->isPickup();
+            $targetStatus = $isPickup ? VendorOrderStatus::PickedUp : VendorOrderStatus::Delivered;
+
+            if ($vendorOrder->status !== $targetStatus) {
                 $vendorOrder->update([
-                    'status' => VendorOrderStatus::Delivered,
-                    'delivered_at' => now(),
+                    'status' => $targetStatus,
+                    'delivered_at' => $isPickup ? null : now(),
+                    'picked_up_at' => $isPickup ? now() : null,
                     'cash_collected' => 0,
                     'proof_of_delivery_path' => $proofPath ?: $vendorOrder->proof_of_delivery_path,
                 ]);

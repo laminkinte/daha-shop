@@ -93,9 +93,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 Route::middleware(['auth', 'role:agent'])->prefix('agent')->name('agent.')->group(function () {
     Route::get('/', AssignedDeliveries::class)->name('deliveries');
     Route::get('/deliveries/{vendorOrderId}', DeliveryDetail::class)->name('deliveries.show');
-    Route::get('/delivery-payment/callback', DeliveryPaymentCallbackController::class)->name('delivery-payment.callback');
     Route::get('/remittance', RemittanceForm::class)->name('remittance');
 });
+
+// Generic (not agent/vendor-specific) - both an agent completing a delivery
+// and a vendor completing self-delivery/pickup payment land here after OPay.
+Route::middleware('auth')->get('/delivery-payment/callback', DeliveryPaymentCallbackController::class)->name('delivery-payment.callback');
 
 Route::get('dashboard', function () {
     $user = auth()->user();

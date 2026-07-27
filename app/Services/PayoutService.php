@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\DeliveryPaymentStatus;
 use App\Enums\PayoutStatus;
 use App\Enums\ReconciliationStatus;
 use App\Enums\VendorOrderStatus;
@@ -22,10 +23,8 @@ class PayoutService
         // A delivered order's cash was collected by an agent, not the platform
         // directly - it isn't ours to pay out again until the agent has
         // actually remitted it. Paying a vendor before that money is in hand
-        // means paying them out of pocket. Picked-up orders don't go through
-        // this check at all: they're excluded by the status filter below
-        // because the vendor already collected that cash themselves.
-        $eligible = VendorOrder::where('vendor_id', $vendor->id)
+        // means paying them out of pocket.
+        $cashEligible = VendorOrder::where('vendor_id', $vendor->id)
             ->where('status', VendorOrderStatus::Delivered)
             ->whereNull('vendor_payout_id')
             ->whereBetween('delivered_at', [$periodStart, $periodEnd])
@@ -33,6 +32,25 @@ class PayoutService
                 $query->where('status', ReconciliationStatus::Remitted);
             })
             ->get();
+
+        // Delivered/picked-up/self-delivered orders paid through the platform
+        // (OPay, via DeliveryPaymentService) land in the platform's account
+        // instantly on success - there's no physical cash handoff chain to
+        // wait on, so these are payout-eligible immediately, independent of
+        // CashReconciliation entirely (pickup orders never have one).
+        $digitallyPaidEligible = VendorOrder::where('vendor_id', $vendor->id)
+            ->whereIn('status', [VendorOrderStatus::Delivered, VendorOrderStatus::PickedUp])
+            ->whereNull('vendor_payout_id')
+            ->whereHas('deliveryPayment', function ($query) {
+                $query->where('status', DeliveryPaymentStatus::Paid);
+            })
+            ->where(function ($query) use ($periodStart, $periodEnd) {
+                $query->whereBetween('delivered_at', [$periodStart, $periodEnd])
+                    ->orWhereBetween('picked_up_at', [$periodStart, $periodEnd]);
+            })
+            ->get();
+
+        $eligible = $cashEligible->concat($digitallyPaidEligible)->unique('id');
 
         if ($eligible->isEmpty()) {
             throw new NothingToPayoutException;
