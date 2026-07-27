@@ -202,7 +202,9 @@ class DeliveryPaymentTest extends TestCase
      * (the normal case for local dev) starting a payment threw and no QR
      * ever rendered. It's now gateway-aware, so agents/vendors can select
      * the local-only Test gateway and complete the flow with no external
-     * API calls at all.
+     * API calls at all - but it still waits for the simulated "customer"
+     * to actually visit the QR's page and confirm, rather than
+     * auto-completing on its own.
      */
     public function test_agent_can_complete_a_delivery_payment_using_the_local_test_gateway(): void
     {
@@ -218,6 +220,20 @@ class DeliveryPaymentTest extends TestCase
         $payment = DeliveryPayment::where('vendor_order_id', $vendorOrder->id)->firstOrFail();
         $this->assertSame(PaymentGateway::Test, $payment->gateway);
         $this->assertNotNull($payment->cashier_url);
+
+        // The customer hasn't "scanned" anything yet - polling must not
+        // complete the payment on its own.
+        Livewire::actingAs($vendorOrder->deliveryAgent->user)
+            ->test(DeliveryDetail::class, ['vendorOrderId' => $vendorOrder->id])
+            ->call('refreshPaymentStatus')
+            ->assertNoRedirect();
+
+        $this->assertSame(DeliveryPaymentStatus::Pending, $payment->fresh()->status);
+        $this->assertSame(VendorOrderStatus::OutForDelivery, $vendorOrder->fresh()->status);
+
+        // Simulate the customer visiting the QR's page and confirming.
+        $this->post(route('test-payment.pay', $payment->reference))
+            ->assertRedirect(route('test-payment.show', $payment->reference));
 
         Livewire::actingAs($vendorOrder->deliveryAgent->user)
             ->test(DeliveryDetail::class, ['vendorOrderId' => $vendorOrder->id])
@@ -297,5 +313,28 @@ class DeliveryPaymentTest extends TestCase
             ->assertNoRedirect();
 
         $this->assertSame(DeliveryPaymentStatus::Pending, $vendorOrder->fresh()->deliveryPayment->status);
+    }
+
+    public function test_test_payment_page_lets_a_simulated_customer_confirm_payment(): void
+    {
+        $vendorOrder = $this->makeAssignedVendorOrder();
+
+        Livewire::actingAs($vendorOrder->deliveryAgent->user)
+            ->test(DeliveryDetail::class, ['vendorOrderId' => $vendorOrder->id])
+            ->set('selectedGateway', 'test')
+            ->call('startPayment');
+
+        $payment = DeliveryPayment::where('vendor_order_id', $vendorOrder->id)->firstOrFail();
+
+        $this->get(route('test-payment.show', $payment->reference))
+            ->assertOk()
+            ->assertSee('Simulate Payment');
+
+        $this->post(route('test-payment.pay', $payment->reference))
+            ->assertRedirect(route('test-payment.show', $payment->reference));
+
+        $this->get(route('test-payment.show', $payment->reference))
+            ->assertOk()
+            ->assertSee('Payment Simulated');
     }
 }

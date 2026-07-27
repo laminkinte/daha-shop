@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\VendorDocumentController;
 use App\Http\Controllers\Agent\DeliveryPaymentCallbackController;
+use App\Http\Controllers\TestPaymentController;
 use App\Http\Controllers\Storefront\DeliveryFeeCallbackController;
 use App\Http\Controllers\Vendor\SubscriptionCallbackController;
 use App\Http\Controllers\Webhooks\MonnifyWebhookController;
@@ -99,6 +100,17 @@ Route::middleware(['auth', 'role:agent'])->prefix('agent')->name('agent.')->grou
 // Generic (not agent/vendor-specific) - both an agent completing a delivery
 // and a vendor completing self-delivery/pickup payment land here after OPay.
 Route::middleware('auth')->get('/delivery-payment/callback', DeliveryPaymentCallbackController::class)->name('delivery-payment.callback');
+
+// Local-dev-only stand-in for a real gateway's hosted checkout page, reached
+// by "scanning" the QR code the Test gateway generates for delivery/pickup
+// payments. Deliberately excluded from routing entirely outside local/testing
+// (mirrors the same env gate PaymentGatewayManager enforces for the Test
+// client itself) so it can never be reached in production. No auth - the
+// device scanning the QR is the customer's own, not a logged-in staff member.
+if (app()->environment(['local', 'testing'])) {
+    Route::get('/test-payments/{reference}', [TestPaymentController::class, 'show'])->name('test-payment.show');
+    Route::post('/test-payments/{reference}/pay', [TestPaymentController::class, 'pay'])->name('test-payment.pay');
+}
 
 Route::get('dashboard', function () {
     $user = auth()->user();

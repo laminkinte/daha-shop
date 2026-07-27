@@ -190,6 +190,19 @@ class VendorSelfDeliveryTest extends TestCase
         $this->assertSame(PaymentGateway::Test, $payment->gateway);
         $this->assertNotNull($payment->cashier_url);
 
+        // The customer hasn't "scanned" anything yet - polling must not
+        // complete the payment on its own.
+        Livewire::actingAs($vendor->user)
+            ->test(OrderManager::class)
+            ->call('refreshPendingPayments');
+
+        $vendorOrder->refresh();
+        $this->assertSame(VendorOrderStatus::OutForDelivery, $vendorOrder->status);
+        $this->assertSame(DeliveryPaymentStatus::Pending, $payment->fresh()->status);
+
+        // Simulate the customer visiting the QR's page and confirming.
+        $this->post(route('test-payment.pay', $payment->reference));
+
         Livewire::actingAs($vendor->user)
             ->test(OrderManager::class)
             ->call('refreshPendingPayments');

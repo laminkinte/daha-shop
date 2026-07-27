@@ -77,6 +77,12 @@ class DeliveryPaymentService
                     'metadata' => [
                         'vendor_order_id' => $vendorOrder->id,
                     ],
+                    // Real gateways here (Paystack et al) already have their
+                    // own hosted checkout the customer has to act on - only
+                    // the Test gateway needs telling that a *different*
+                    // device (the customer's) is expected to confirm, not
+                    // the same one that clicked Start Payment.
+                    'requiresManualConfirmation' => $gateway === PaymentGateway::Test,
                 ],
             );
         }
@@ -109,8 +115,12 @@ class DeliveryPaymentService
         }
 
         if (! $client->transactionSucceeded($data)) {
-            $payment->update(['status' => DeliveryPaymentStatus::Failed]);
-            return $payment->fresh();
+            // Not yet succeeded is not the same as failed - a real gateway
+            // reporting "still initial/pending" here used to get marked
+            // Failed outright, which is wrong (and would have made every
+            // still-outstanding QR scan look like a dead end on the very
+            // next poll). Leave it Pending; the next poll tries again.
+            return $payment;
         }
 
         DB::transaction(function () use ($payment, $proofPath) {
