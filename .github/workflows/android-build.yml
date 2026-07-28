@@ -1,0 +1,61 @@
+name: Android build
+
+# Compiles the Capacitor Android app and produces a debug APK to download
+# and sideload directly - this exists because this project's local dev
+# machine (2 cores / ~3GB RAM) isn't enough to reliably run a Gradle build
+# without running out of memory. Mirrors ios-build.yml's approach of
+# building on a real CI runner instead of locally.
+#
+# The debug APK is signed with the default Android debug keystore, which
+# is enough to sideload and test on a device with "install unknown apps"
+# enabled - it is NOT suitable for the Play Store (that needs a real
+# release signing key, added later as GitHub secrets once this is ready
+# for that step).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - "capacitor.config.json"
+      - "package.json"
+      - "package-lock.json"
+      - "resources/js/**"
+      - ".github/workflows/android-build.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install JS dependencies
+        run: npm install
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: daha-shop-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk

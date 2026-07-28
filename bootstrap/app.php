@@ -30,6 +30,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/paystack',
             'webhooks/opay',
         ]);
+
+        // Needed so Laravel correctly sees requests as HTTPS when the local
+        // dev server sits behind a tunnel (e.g. cloudflared/ngrok) - without
+        // this, generated asset/redirect URLs come back http:// even though
+        // the browser loaded the page over https://, which browsers then
+        // block as mixed content.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
