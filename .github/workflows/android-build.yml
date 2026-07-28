@@ -52,7 +52,20 @@ jobs:
 
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        shell: bash
+        run: |
+          set +e
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            echo "::group::Gradle failure tail"
+            tail -n 60 /tmp/gradle-build.log
+            echo "::endgroup::"
+            tail -n 60 /tmp/gradle-build.log | while IFS= read -r line; do
+              echo "::error::${line:0:400}"
+            done
+            exit "$status"
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
