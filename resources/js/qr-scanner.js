@@ -23,8 +23,18 @@ document.addEventListener('alpine:init', () => {
             // a static import would delay this module registering itself with
             // Alpine until after the jsQR download finishes, risking losing the
             // race against Livewire's own script calling Alpine.start() first.
-            const mod = await import('jsqr');
-            this._jsQR = mod.default;
+            try {
+                const mod = await import('jsqr');
+                // jsQR ships as a single CJS export - depending on how the
+                // bundler interops that, the resolved value is either the
+                // function itself or a namespace object wrapping it as
+                // .default. `?? mod` covers both shapes instead of assuming one.
+                this._jsQR = mod.default ?? mod;
+            } catch (e) {
+                this.error = 'Could not load the scanner. Check your connection and try again.';
+                return;
+            }
+
             this._canvas = document.createElement('canvas');
 
             navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
@@ -61,7 +71,14 @@ document.addEventListener('alpine:init', () => {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const result = this._jsQR(imageData.data, imageData.width, imageData.height);
+
+            let result;
+            try {
+                result = this._jsQR(imageData.data, imageData.width, imageData.height);
+            } catch (e) {
+                this.error = 'The scanner hit an unexpected error. Please reload and try again.';
+                return;
+            }
 
             if (!result) {
                 this._timeout = setTimeout(() => this._tick(), SCAN_INTERVAL_MS);
