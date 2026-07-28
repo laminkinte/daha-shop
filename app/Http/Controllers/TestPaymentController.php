@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DeliveryPayment;
 use App\Services\DeliveryPaymentService;
 use App\Services\TestPaymentGatewayClient;
 use Illuminate\Http\RedirectResponse;
@@ -11,9 +12,12 @@ class TestPaymentController extends Controller
 {
     public function show(string $reference): View
     {
+        $payment = DeliveryPayment::where('reference', $reference)->with('vendorOrder.order')->first();
+
         return view('test-payment', [
             'reference' => $reference,
             'awaitingConfirmation' => TestPaymentGatewayClient::isAwaitingManualConfirmation($reference),
+            'vendorOrder' => $payment?->vendorOrder,
         ]);
     }
 

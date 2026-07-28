@@ -24,8 +24,15 @@
                 </form>
             @else
                 <div class="text-green-600 text-4xl mb-3">&#10003;</div>
-                <h1 class="font-semibold text-lg mb-1">Payment Simulated</h1>
-                <p class="text-sm text-gray-500">You can close this page now.</p>
+                <h1 class="font-semibold text-lg mb-1">
+                    {{ $vendorOrder?->isPickup() ? 'Order Picked Up!' : 'Order Delivered!' }}
+                </h1>
+                <p class="text-sm text-gray-500 mb-4">Payment confirmed &mdash; you can close this page now.</p>
+                @if ($vendorOrder)
+                    <a href="{{ route('storefront.orders.show', $vendorOrder->order->order_number) }}" class="text-sm font-semibold text-green-700 underline">
+                        View your order
+                    </a>
+                @endif
             @endif
         </div>
     </body>

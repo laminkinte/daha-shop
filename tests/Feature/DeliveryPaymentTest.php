@@ -335,7 +335,8 @@ class DeliveryPaymentTest extends TestCase
 
         $this->get(route('test-payment.show', $payment->reference))
             ->assertOk()
-            ->assertSee('Payment Simulated');
+            ->assertSee('Order Delivered!')
+            ->assertSee('View your order');
 
         // The order should complete right away from confirming the
         // simulated payment - it must not depend on the agent/vendor
