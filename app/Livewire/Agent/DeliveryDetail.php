@@ -72,17 +72,23 @@ class DeliveryDetail extends Component
     /**
      * Polled every 5s by the view while a payment is pending, in case the
      * OPay webhook hasn't landed yet - re-verifies directly and redirects
-     * once the order is confirmed delivered.
+     * once the order is confirmed delivered. The completion itself can also
+     * happen out-of-band (e.g. the Test gateway's simulate-payment page
+     * completes it immediately rather than waiting on this poll), so the
+     * redirect check runs regardless of whether this call was the one that
+     * did the completing.
      */
     public function refreshPaymentStatus(DeliveryPaymentService $service): void
     {
         $payment = $this->vendorOrder->deliveryPayment;
 
-        if (! $payment || $payment->status !== DeliveryPaymentStatus::Pending) {
+        if (! $payment) {
             return;
         }
 
-        $service->verifyAndComplete($payment->reference);
+        if ($payment->status === DeliveryPaymentStatus::Pending) {
+            $service->verifyAndComplete($payment->reference);
+        }
 
         $this->vendorOrder->refresh()->load('deliveryPayment');
 

@@ -336,5 +336,11 @@ class DeliveryPaymentTest extends TestCase
         $this->get(route('test-payment.show', $payment->reference))
             ->assertOk()
             ->assertSee('Payment Simulated');
+
+        // The order should complete right away from confirming the
+        // simulated payment - it must not depend on the agent/vendor
+        // screen's separate 5s poll ever firing.
+        $this->assertSame(DeliveryPaymentStatus::Paid, $payment->fresh()->status);
+        $this->assertSame(VendorOrderStatus::Delivered, $vendorOrder->fresh()->status);
     }
 }
