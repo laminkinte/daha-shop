@@ -59,9 +59,12 @@ jobs:
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
             echo "::group::Gradle failure tail"
-            tail -n 60 /tmp/gradle-build.log
+            tail -n 150 /tmp/gradle-build.log
             echo "::endgroup::"
-            tail -n 60 /tmp/gradle-build.log | while IFS= read -r line; do
+            # ::error:: commands are capped at ~10 per step, so only surface
+            # the lines that actually explain what went wrong, not the full
+            # stack trace noise.
+            grep -E "FAILURE:|What went wrong|^> |Caused by:|error:|Exception" /tmp/gradle-build.log | tail -n 10 | while IFS= read -r line; do
               echo "::error::${line:0:400}"
             done
             exit "$status"
