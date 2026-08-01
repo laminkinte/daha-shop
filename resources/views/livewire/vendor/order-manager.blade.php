@@ -1,4 +1,10 @@
 <div wire:poll.5s="refreshPendingPayments">
+    {{-- Silently shares this vendor's live GPS position with the customer
+         whenever they have an order out for self-delivery (see
+         OrderManager::updateLocation()'s guard) via
+         resources/js/agent-location.js. No visual footprint. --}}
+    <div x-data="agentLocation()" x-init="init()"></div>
+
     <div class="flex items-center gap-2 mb-4 flex-wrap">
         <button wire:click="$set('filter', 'all')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'all' ? 'bg-green-700 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50' }}">All</button>
         @foreach ($statuses as $status)

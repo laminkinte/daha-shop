@@ -12,5 +12,5 @@
     wire:ignore
     x-data="deliveryMap({ lat: {{ $lat }}, lng: {{ $lng }}, vendorOrderId: {{ $vendorOrderId }} })"
     x-init="init()"
-    {{ $attributes->merge(['class' => 'h-64 w-full']) }}
+    class="{{ $attributes->get('class', 'h-64 w-full') }}"
 ></div>

@@ -8,6 +8,7 @@ use App\Enums\VendorOrderStatus;
 use App\Enums\VendorStatus;
 use App\Livewire\Agent\DeliveryDetail;
 use App\Livewire\Storefront\OrderTracking;
+use App\Livewire\Vendor\OrderManager;
 use App\Models\Address;
 use App\Models\DeliveryAgent;
 use App\Models\Order;
@@ -142,14 +143,59 @@ class DeliveryLocationTrackingTest extends TestCase
             ->assertDontSee("Waiting for your delivery agent's location", false);
     }
 
-    public function test_tracking_section_is_absent_for_vendor_self_delivery(): void
+    public function test_tracking_section_shows_the_waiting_placeholder_for_vendor_self_delivery(): void
     {
         $vendorOrder = $this->makeAssignedVendorOrder();
         $vendorOrder->update(['delivery_agent_id' => null]);
 
         Livewire::actingAs($vendorOrder->order->user)
             ->test(OrderTracking::class, ['order' => $vendorOrder->order->fresh()])
+            ->assertSee("Waiting for your delivery agent's location", false);
+    }
+
+    public function test_tracking_section_shows_the_live_map_for_self_delivery_once_the_vendor_has_a_location(): void
+    {
+        $vendorOrder = $this->makeAssignedVendorOrder();
+        $vendorOrder->update(['delivery_agent_id' => null]);
+        $vendorOrder->vendor->update([
+            'current_lat' => 6.5244,
+            'current_lng' => 3.3792,
+            'location_updated_at' => now(),
+        ]);
+
+        Livewire::actingAs($vendorOrder->order->user)
+            ->test(OrderTracking::class, ['order' => $vendorOrder->order->fresh()])
+            ->assertSee('Out for delivery')
             ->assertDontSee("Waiting for your delivery agent's location", false);
+    }
+
+    public function test_vendor_update_location_persists_while_self_delivering(): void
+    {
+        $vendorOrder = $this->makeAssignedVendorOrder();
+        $vendorOrder->update(['delivery_agent_id' => null]);
+
+        Livewire::actingAs($vendorOrder->vendor->user)
+            ->test(OrderManager::class)
+            ->call('updateLocation', 6.5244, 3.3792);
+
+        $vendor = $vendorOrder->vendor->fresh();
+        $this->assertEqualsWithDelta(6.5244, (float) $vendor->current_lat, 0.0001);
+        $this->assertEqualsWithDelta(3.3792, (float) $vendor->current_lng, 0.0001);
+        $this->assertNotNull($vendor->location_updated_at);
+    }
+
+    public function test_vendor_update_location_is_a_no_op_when_not_self_delivering(): void
+    {
+        $vendorOrder = $this->makeAssignedVendorOrder();
+
+        Livewire::actingAs($vendorOrder->vendor->user)
+            ->test(OrderManager::class)
+            ->call('updateLocation', 6.5244, 3.3792)
+            ->assertHasNoErrors();
+
+        $vendor = $vendorOrder->vendor->fresh();
+        $this->assertNull($vendor->current_lat);
+        $this->assertNull($vendor->current_lng);
     }
 
     public function test_tracking_section_is_absent_for_other_statuses(): void

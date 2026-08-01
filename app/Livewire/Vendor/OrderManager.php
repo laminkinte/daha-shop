@@ -51,6 +51,33 @@ class OrderManager extends Component
         $service->assignSelfDelivery($this->authorizedOrder($vendorOrderId));
     }
 
+    /**
+     * Called from resources/js/agent-location.js (shared with the delivery
+     * agent's screen) while this vendor has at least one order they're
+     * self-delivering - the guard makes a stray ping a silent no-op once
+     * every self-delivery they have in flight has been completed, instead
+     * of writing a stale position onto the vendor.
+     */
+    public function updateLocation(float $lat, float $lng): void
+    {
+        $vendor = Auth::user()->vendor;
+
+        $isSelfDelivering = $vendor->vendorOrders()
+            ->where('status', VendorOrderStatus::OutForDelivery)
+            ->whereNull('delivery_agent_id')
+            ->exists();
+
+        if (! $isSelfDelivering) {
+            return;
+        }
+
+        $vendor->update([
+            'current_lat' => $lat,
+            'current_lng' => $lng,
+            'location_updated_at' => now(),
+        ]);
+    }
+
     public function markReadyForPickup(int $vendorOrderId, VendorOrderService $service): void
     {
         $service->markReadyForPickup($this->authorizedOrder($vendorOrderId));

@@ -24,29 +24,31 @@ class OrderTracking extends Component
     }
 
     /**
-     * Polled every 10s while a vendor-order is out for delivery with an
-     * agent assigned - dispatches a browser event rather than touching
-     * $this->order, so it can't trigger a full-page re-render that would
-     * disturb the map's wire:ignore'd DOM (see resources/js/delivery-map.js).
+     * Polled every 10s while a vendor-order is out for delivery - dispatches
+     * a browser event rather than touching $this->order, so it can't trigger
+     * a full-page re-render that would disturb the map's wire:ignore'd DOM
+     * (see resources/js/delivery-map.js). The position tracked is whichever
+     * party is actually doing the delivering: the assigned agent, or the
+     * vendor themselves when self-delivering (no agent assigned).
      */
     public function refreshAgentLocation(int $vendorOrderId): void
     {
         $vendorOrder = $this->order->vendorOrders->firstWhere('id', $vendorOrderId);
 
-        if (! $vendorOrder || $vendorOrder->status !== VendorOrderStatus::OutForDelivery || ! $vendorOrder->deliveryAgent) {
+        if (! $vendorOrder || $vendorOrder->status !== VendorOrderStatus::OutForDelivery) {
             return;
         }
 
-        $agent = $vendorOrder->deliveryAgent()->first();
+        $tracked = $vendorOrder->deliveryAgent()->first() ?? $vendorOrder->vendor()->first();
 
-        if ($agent->current_lat === null || $agent->current_lng === null) {
+        if ($tracked->current_lat === null || $tracked->current_lng === null) {
             return;
         }
 
         $this->dispatch(
             'agent-location-updated.'.$vendorOrderId,
-            lat: (float) $agent->current_lat,
-            lng: (float) $agent->current_lng,
+            lat: (float) $tracked->current_lat,
+            lng: (float) $tracked->current_lng,
         );
     }
 

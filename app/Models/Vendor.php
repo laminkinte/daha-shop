@@ -15,6 +15,7 @@ class Vendor extends Model
         'bank_name', 'bank_account_number', 'bank_account_name', 'approved_at',
         'id_document_type', 'id_document_path', 'selfie_path',
         'id_document_rejection_reason', 'selfie_rejection_reason', 'reviewed_by', 'reviewed_at',
+        'current_lat', 'current_lng', 'location_updated_at',
     ];
 
     protected function casts(): array
@@ -23,6 +24,9 @@ class Vendor extends Model
             'status' => VendorStatus::class,
             'approved_at' => 'datetime',
             'reviewed_at' => 'datetime',
+            'current_lat' => 'decimal:7',
+            'current_lng' => 'decimal:7',
+            'location_updated_at' => 'datetime',
         ];
     }
 

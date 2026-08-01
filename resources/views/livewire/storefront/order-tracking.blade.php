@@ -59,10 +59,13 @@
             $steps = $vendorOrder->isPickup() ? $pickupSteps : $deliverySteps;
             $stepKeys = array_keys($steps);
             $isFulfilled = in_array($vendorOrder->status->value, ['delivered', 'picked_up'], true);
-            $isLiveTracked = $vendorOrder->status === \App\Enums\VendorOrderStatus::OutForDelivery
-                && $vendorOrder->deliveryAgent
-                && $vendorOrder->deliveryAgent->current_lat !== null
-                && $vendorOrder->deliveryAgent->current_lng !== null;
+            // Whoever is actually out delivering this order: the assigned
+            // agent, or the vendor themselves when self-delivering (no
+            // agent assigned) - see OrderTracking::refreshAgentLocation().
+            $tracked = $vendorOrder->deliveryAgent ?? $vendorOrder->vendor;
+            $trackedLat = $vendorOrder->status === \App\Enums\VendorOrderStatus::OutForDelivery ? $tracked?->current_lat : null;
+            $trackedLng = $vendorOrder->status === \App\Enums\VendorOrderStatus::OutForDelivery ? $tracked?->current_lng : null;
+            $isLiveTracked = $trackedLat !== null && $trackedLng !== null;
             $currentIndex = array_search($vendorOrder->status->value, $stepKeys);
             $firstItem = $vendorOrder->items->first();
             $thumbnail = $firstItem?->product?->images->first();
@@ -74,8 +77,8 @@
                      floating card carrying the status summary on top of it. --}}
                 <div class="relative" wire:poll.10s="refreshAgentLocation({{ $vendorOrder->id }})">
                     <x-delivery-map
-                        :lat="(float) $vendorOrder->deliveryAgent->current_lat"
-                        :lng="(float) $vendorOrder->deliveryAgent->current_lng"
+                        :lat="(float) $trackedLat"
+                        :lng="(float) $trackedLng"
                         :vendor-order-id="$vendorOrder->id"
                         class="h-80 sm:h-96 w-full"
                     />
@@ -194,7 +197,7 @@
                     </div>
                 @endif
 
-                @if ($vendorOrder->status === \App\Enums\VendorOrderStatus::OutForDelivery && $vendorOrder->deliveryAgent && ! $isLiveTracked)
+                @if ($vendorOrder->status === \App\Enums\VendorOrderStatus::OutForDelivery && ! $isLiveTracked)
                     <div class="mt-4 pt-4 border-t border-gray-100" wire:poll.10s="refreshAgentLocation({{ $vendorOrder->id }})">
                         <p class="text-sm text-gray-500">Waiting for your delivery agent's location&hellip;</p>
                     </div>
