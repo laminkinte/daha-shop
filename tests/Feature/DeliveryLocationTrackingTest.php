@@ -131,7 +131,7 @@ class DeliveryLocationTrackingTest extends TestCase
 
         Livewire::actingAs($vendorOrder->order->user)
             ->test(OrderTracking::class, ['order' => $vendorOrder->order->fresh()])
-            ->assertSee('Out for delivery')
+            ->assertSee('Arriving today')
             ->assertSee('See all orders')
             ->assertDontSee("Waiting for your delivery agent's location", false);
     }
@@ -170,7 +170,7 @@ class DeliveryLocationTrackingTest extends TestCase
 
         Livewire::actingAs($vendorOrder->order->user)
             ->test(OrderTracking::class, ['order' => $vendorOrder->order->fresh()])
-            ->assertSee('Out for delivery')
+            ->assertSee('Arriving today')
             ->assertDontSee("Waiting for your delivery agent's location", false);
     }
 

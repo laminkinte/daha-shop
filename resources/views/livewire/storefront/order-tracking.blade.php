@@ -100,7 +100,7 @@
                          paint at all until something forced a repaint. --}}
                     <div class="absolute top-4 left-4 right-4 sm:right-auto sm:w-80 bg-white rounded-xl shadow-lg p-4" style="z-index: 2000 !important; transform: translateZ(0); will-change: transform;">
                         <div class="flex items-center justify-between mb-3">
-                            <h2 class="font-bold text-gray-900">Out for delivery</h2>
+                            <h2 class="font-bold text-gray-900">Arriving today</h2>
                             <a href="{{ route('storefront.orders') }}" wire:navigate class="text-xs font-semibold text-green-700 hover:underline">See all orders</a>
                         </div>
 
