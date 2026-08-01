@@ -1,4 +1,10 @@
 <div class="max-w-xl">
+    {{-- Silently shares this agent's live GPS position with the customer
+         while this screen is open, via resources/js/agent-location.js. No
+         visual footprint, and failure/denial here never blocks anything
+         else on this page. --}}
+    <div x-data="agentLocation()" x-init="init()"></div>
+
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
         <h2 class="font-semibold text-lg mb-2">#{{ $vendorOrder->order->order_number }}</h2>
         <div class="text-sm text-gray-600 space-y-1">

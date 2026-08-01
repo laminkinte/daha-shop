@@ -39,8 +39,29 @@ class DeliveryDetail extends Component
 
     public function mount(int $vendorOrderId): void
     {
-        $this->vendorOrder = Auth::user()->deliveryAgent->vendorOrders()->with('order.address', 'vendor', 'items', 'deliveryPayment')->findOrFail($vendorOrderId);
+        $this->vendorOrder = Auth::user()->deliveryAgent->vendorOrders()->with('order.address', 'vendor', 'items', 'deliveryPayment', 'deliveryAgent')->findOrFail($vendorOrderId);
         $this->cashCollected = number_format($this->vendorOrder->cashDueAtDelivery() / 100, 2, '.', '');
+    }
+
+    /**
+     * Called directly from resources/js/agent-location.js via $wire while
+     * this screen is open and the browser has a GPS fix - the status guard
+     * makes a stray late ping (e.g. arriving just after markDelivered()
+     * already redirected) a silent no-op instead of writing stale
+     * coordinates onto a completed delivery. No re-render needed - this
+     * changes nothing the agent's own screen displays.
+     */
+    public function updateLocation(float $lat, float $lng): void
+    {
+        if ($this->vendorOrder->status !== VendorOrderStatus::OutForDelivery) {
+            return;
+        }
+
+        $this->vendorOrder->deliveryAgent->update([
+            'current_lat' => $lat,
+            'current_lng' => $lng,
+            'location_updated_at' => now(),
+        ]);
     }
 
     /**

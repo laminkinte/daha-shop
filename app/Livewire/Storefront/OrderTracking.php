@@ -20,7 +20,34 @@ class OrderTracking extends Component
     public function mount(Order $order): void
     {
         abort_unless($order->user_id === auth()->id(), 403);
-        $this->order = $order->load(['vendorOrders.vendor', 'vendorOrders.items.review', 'vendorOrders.deliveryPayment', 'address.state', 'address.lga']);
+        $this->order = $order->load(['vendorOrders.vendor', 'vendorOrders.items.review', 'vendorOrders.deliveryPayment', 'vendorOrders.deliveryAgent', 'address.state', 'address.lga']);
+    }
+
+    /**
+     * Polled every 10s while a vendor-order is out for delivery with an
+     * agent assigned - dispatches a browser event rather than touching
+     * $this->order, so it can't trigger a full-page re-render that would
+     * disturb the map's wire:ignore'd DOM (see resources/js/delivery-map.js).
+     */
+    public function refreshAgentLocation(int $vendorOrderId): void
+    {
+        $vendorOrder = $this->order->vendorOrders->firstWhere('id', $vendorOrderId);
+
+        if (! $vendorOrder || $vendorOrder->status !== VendorOrderStatus::OutForDelivery || ! $vendorOrder->deliveryAgent) {
+            return;
+        }
+
+        $agent = $vendorOrder->deliveryAgent()->first();
+
+        if ($agent->current_lat === null || $agent->current_lng === null) {
+            return;
+        }
+
+        $this->dispatch(
+            'agent-location-updated.'.$vendorOrderId,
+            lat: (float) $agent->current_lat,
+            lng: (float) $agent->current_lng,
+        );
     }
 
     public function submitReview(int $orderItemId): void

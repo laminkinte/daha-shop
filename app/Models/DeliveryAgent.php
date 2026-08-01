@@ -9,12 +9,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DeliveryAgent extends Model
 {
-    protected $fillable = ['user_id', 'state_id', 'lga_id', 'vehicle_type', 'availability'];
+    protected $fillable = ['user_id', 'state_id', 'lga_id', 'vehicle_type', 'availability', 'current_lat', 'current_lng', 'location_updated_at'];
 
     protected function casts(): array
     {
         return [
             'availability' => AgentAvailability::class,
+            'current_lat' => 'decimal:7',
+            'current_lng' => 'decimal:7',
+            'location_updated_at' => 'datetime',
         ];
     }
 

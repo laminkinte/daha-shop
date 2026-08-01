@@ -135,6 +135,21 @@
                     @endif
                 </div>
             @endif
+
+            @if ($vendorOrder->status === \App\Enums\VendorOrderStatus::OutForDelivery && $vendorOrder->deliveryAgent)
+                <div class="mt-4 pt-4 border-t border-gray-100" wire:poll.10s="refreshAgentLocation({{ $vendorOrder->id }})">
+                    <h3 class="font-semibold text-gray-800 mb-2 text-sm">Live agent location</h3>
+                    @if ($vendorOrder->deliveryAgent->current_lat !== null && $vendorOrder->deliveryAgent->current_lng !== null)
+                        <x-delivery-map
+                            :lat="(float) $vendorOrder->deliveryAgent->current_lat"
+                            :lng="(float) $vendorOrder->deliveryAgent->current_lng"
+                            :vendor-order-id="$vendorOrder->id"
+                        />
+                    @else
+                        <p class="text-sm text-gray-500">Waiting for your delivery agent's location&hellip;</p>
+                    @endif
+                </div>
+            @endif
         </div>
     @endforeach
 </div>
