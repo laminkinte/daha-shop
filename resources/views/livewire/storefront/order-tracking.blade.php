@@ -75,7 +75,7 @@
             @if ($isLiveTracked)
                 {{-- Amazon-style hero: the map is the dominant element, with a
                      floating card carrying the status summary on top of it. --}}
-                <div class="relative" wire:poll.10s="refreshAgentLocation({{ $vendorOrder->id }})">
+                <div class="relative" style="isolation: isolate;" wire:poll.10s="refreshAgentLocation({{ $vendorOrder->id }})">
                     <x-delivery-map
                         :lat="(float) $trackedLat"
                         :lng="(float) $trackedLng"

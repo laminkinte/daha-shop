@@ -53,6 +53,16 @@ document.addEventListener('alpine:init', () => {
                 this.map.fitBounds(L.featureGroup([this.marker, destMarker]).getBounds(), { padding: [40, 40], maxZoom: 16 });
             }
 
+            // Leaflet computes its own size/layout from the container's
+            // dimensions at the moment init() runs - if that happens before
+            // the browser has fully settled layout/paint for this element
+            // (easy to hit here, since this all runs inside an async Alpine
+            // component on a Livewire-rendered page), the map and anything
+            // stacked on top of it can render incorrectly until something
+            // else forces a repaint (e.g. using the zoom control). Forcing
+            // this on the next tick is Leaflet's own documented fix.
+            setTimeout(() => this.map.invalidateSize(), 0);
+
             // Livewire 3 browser event, dispatched by
             // OrderTracking::refreshAgentLocation() on each 10s poll tick.
             // Moving the existing marker (not re-creating it) is what keeps
