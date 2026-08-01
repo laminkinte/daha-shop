@@ -90,12 +90,15 @@
                          this page closes it; it only stops rendering once
                          the vendor order leaves this tracked state.
 
-                         The inline transform forces this onto its own GPU
-                         compositing layer - without it, Leaflet's own
-                         transform-animated tile panes can cause the browser
-                         to leave this overlay unpainted until something
-                         (e.g. scrolling) forces a repaint. --}}
-                    <div class="absolute z-10 top-4 left-4 right-4 sm:right-auto sm:w-80 bg-white rounded-xl shadow-lg p-4" style="transform: translateZ(0); will-change: transform;">
+                         Leaflet's own internal panes/controls use z-index
+                         values up to 1000 (see leaflet.css) - z-index:2000
+                         !important guarantees this wins regardless, rather
+                         than relying on Tailwind's z-10 competing with
+                         whatever stacking context Leaflet ends up creating.
+                         The transform forces its own GPU compositing layer,
+                         fixing a separate issue where this card wouldn't
+                         paint at all until something forced a repaint. --}}
+                    <div class="absolute top-4 left-4 right-4 sm:right-auto sm:w-80 bg-white rounded-xl shadow-lg p-4" style="z-index: 2000 !important; transform: translateZ(0); will-change: transform;">
                         <div class="flex items-center justify-between mb-3">
                             <h2 class="font-bold text-gray-900">Out for delivery</h2>
                             <a href="{{ route('storefront.orders') }}" wire:navigate class="text-xs font-semibold text-green-700 hover:underline">See all orders</a>
