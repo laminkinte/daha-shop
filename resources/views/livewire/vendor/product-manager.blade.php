@@ -125,6 +125,11 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right space-x-2">
+                            @if ($product->status->value === 'published')
+                                <a href="{{ route('storefront.product', $product) }}" target="_blank" class="text-gray-500 hover:underline text-xs">View</a>
+                            @else
+                                <span class="text-gray-300 text-xs cursor-not-allowed" title="Only published products can be viewed live">View</span>
+                            @endif
                             <button wire:click="edit({{ $product->id }})" class="text-green-700 hover:underline text-xs">Edit</button>
                             <button wire:click="delete({{ $product->id }})" wire:confirm="Delete this product?" class="text-red-600 hover:underline text-xs">Delete</button>
                         </td>

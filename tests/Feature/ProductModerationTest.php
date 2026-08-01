@@ -191,6 +191,37 @@ class ProductModerationTest extends TestCase
         $this->assertSame(2, $product->stock);
     }
 
+    public function test_product_manager_only_links_view_to_published_products(): void
+    {
+        $vendor = $this->makeVendor();
+        $category = Category::create(['name' => 'Phones', 'slug' => 'phones']);
+
+        $published = Product::create([
+            'vendor_id' => $vendor->id,
+            'category_id' => $category->id,
+            'name' => 'Live Phone',
+            'slug' => 'live-phone',
+            'base_price' => 1000000,
+            'stock' => 5,
+            'status' => ProductStatus::Published,
+        ]);
+
+        $pending = Product::create([
+            'vendor_id' => $vendor->id,
+            'category_id' => $category->id,
+            'name' => 'Awaiting Phone',
+            'slug' => 'awaiting-phone',
+            'base_price' => 1000000,
+            'stock' => 5,
+            'status' => ProductStatus::PendingReview,
+        ]);
+
+        Livewire::actingAs($vendor->user)
+            ->test(ProductManager::class)
+            ->assertSee(route('storefront.product', $published), false)
+            ->assertDontSee(route('storefront.product', $pending), false);
+    }
+
     public function test_a_vendor_cannot_add_an_unpublished_product_to_cart_via_catalog(): void
     {
         $vendor = $this->makeVendor();
