@@ -19,7 +19,7 @@ class OrderTracking extends Component
 
     public array $comments = [];
 
-    public function mount(Order $order, GeocodingService $geocodingService): void
+    public function mount(Order $order): void
     {
         abort_unless($order->user_id === auth()->id(), 403);
         $this->order = $order->load(['vendorOrders.vendor', 'vendorOrders.items.review', 'vendorOrders.items.product.images', 'vendorOrders.deliveryPayment', 'vendorOrders.deliveryAgent', 'address.state', 'address.lga']);
@@ -28,9 +28,11 @@ class OrderTracking extends Component
         // map will actually render (an assigned agent or self-delivering
         // vendor already has a position) - otherwise there's nothing to plot
         // it alongside, and this is a network call we don't want to make on
-        // every order-tracking page load.
+        // every order-tracking page load. Resolved via app() rather than a
+        // second mount() parameter - full-page Livewire routes only reliably
+        // bind route parameters there, not arbitrary injected services.
         if ($this->order->vendorOrders->contains(fn ($vo) => $this->trackedParty($vo)?->current_lat !== null)) {
-            $geocodingService->geocode($this->order->address);
+            app(GeocodingService::class)->geocode($this->order->address);
         }
     }
 
