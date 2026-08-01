@@ -113,7 +113,23 @@ class DeliveryLocationTrackingTest extends TestCase
 
         Livewire::actingAs($vendorOrder->order->user)
             ->test(OrderTracking::class, ['order' => $vendorOrder->order])
-            ->assertSee('Live agent location');
+            ->assertSee("Waiting for your delivery agent's location", false);
+    }
+
+    public function test_tracking_section_shows_the_live_map_once_the_agent_has_a_location(): void
+    {
+        $vendorOrder = $this->makeAssignedVendorOrder();
+        $vendorOrder->deliveryAgent->update([
+            'current_lat' => 6.5244,
+            'current_lng' => 3.3792,
+            'location_updated_at' => now(),
+        ]);
+
+        Livewire::actingAs($vendorOrder->order->user)
+            ->test(OrderTracking::class, ['order' => $vendorOrder->order->fresh()])
+            ->assertSee('Out for delivery')
+            ->assertSee('See all orders')
+            ->assertDontSee("Waiting for your delivery agent's location", false);
     }
 
     public function test_tracking_section_is_absent_for_pickup_orders(): void
@@ -123,7 +139,7 @@ class DeliveryLocationTrackingTest extends TestCase
 
         Livewire::actingAs($vendorOrder->order->user)
             ->test(OrderTracking::class, ['order' => $vendorOrder->order->fresh()])
-            ->assertDontSee('Live agent location');
+            ->assertDontSee("Waiting for your delivery agent's location", false);
     }
 
     public function test_tracking_section_is_absent_for_vendor_self_delivery(): void
@@ -133,7 +149,7 @@ class DeliveryLocationTrackingTest extends TestCase
 
         Livewire::actingAs($vendorOrder->order->user)
             ->test(OrderTracking::class, ['order' => $vendorOrder->order->fresh()])
-            ->assertDontSee('Live agent location');
+            ->assertDontSee("Waiting for your delivery agent's location", false);
     }
 
     public function test_tracking_section_is_absent_for_other_statuses(): void
@@ -142,7 +158,7 @@ class DeliveryLocationTrackingTest extends TestCase
 
         Livewire::actingAs($vendorOrder->order->user)
             ->test(OrderTracking::class, ['order' => $vendorOrder->order])
-            ->assertDontSee('Live agent location');
+            ->assertDontSee("Waiting for your delivery agent's location", false);
     }
 
     public function test_refresh_agent_location_dispatches_the_current_coordinates(): void

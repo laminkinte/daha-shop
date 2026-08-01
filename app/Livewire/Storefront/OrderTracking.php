@@ -20,7 +20,7 @@ class OrderTracking extends Component
     public function mount(Order $order): void
     {
         abort_unless($order->user_id === auth()->id(), 403);
-        $this->order = $order->load(['vendorOrders.vendor', 'vendorOrders.items.review', 'vendorOrders.deliveryPayment', 'vendorOrders.deliveryAgent', 'address.state', 'address.lga']);
+        $this->order = $order->load(['vendorOrders.vendor', 'vendorOrders.items.review', 'vendorOrders.items.product.images', 'vendorOrders.deliveryPayment', 'vendorOrders.deliveryAgent', 'address.state', 'address.lga']);
     }
 
     /**

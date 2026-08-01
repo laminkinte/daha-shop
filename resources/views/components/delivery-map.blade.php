@@ -12,5 +12,5 @@
     wire:ignore
     x-data="deliveryMap({ lat: {{ $lat }}, lng: {{ $lng }}, vendorOrderId: {{ $vendorOrderId }} })"
     x-init="init()"
-    class="rounded-xl overflow-hidden h-64 w-full border border-gray-200"
+    {{ $attributes->merge(['class' => 'h-64 w-full']) }}
 ></div>
