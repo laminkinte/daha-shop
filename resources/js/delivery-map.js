@@ -4,7 +4,7 @@
 import 'leaflet/dist/leaflet.css';
 
 document.addEventListener('alpine:init', () => {
-    Alpine.data('deliveryMap', ({ lat, lng, vendorOrderId }) => ({
+    Alpine.data('deliveryMap', ({ lat, lng, vendorOrderId, destLat = null, destLng = null }) => ({
         map: null,
         marker: null,
 
@@ -34,15 +34,37 @@ document.addEventListener('alpine:init', () => {
                 maxZoom: 19,
             }).addTo(this.map);
 
-            this.marker = L.marker([lat, lng]).addTo(this.map);
+            this.marker = L.marker([lat, lng]).addTo(this.map).bindPopup('Your delivery');
+
+            // The destination point (customer's address) is resolved once,
+            // server-side, by GeocodingService - it never moves, so unlike
+            // the delivery marker it needs no Livewire.on() listener. It's a
+            // plain circleMarker (not the default pin) so the two points
+            // stay visually distinct at a glance.
+            if (destLat !== null && destLng !== null) {
+                const destMarker = L.circleMarker([destLat, destLng], {
+                    radius: 9,
+                    color: '#dc2626',
+                    fillColor: '#dc2626',
+                    fillOpacity: 0.9,
+                    weight: 2,
+                }).addTo(this.map).bindPopup('Delivery address');
+
+                this.map.fitBounds(L.featureGroup([this.marker, destMarker]).getBounds(), { padding: [40, 40], maxZoom: 16 });
+            }
 
             // Livewire 3 browser event, dispatched by
             // OrderTracking::refreshAgentLocation() on each 10s poll tick.
-            // Moving the existing marker/map (not re-creating them) is what
-            // keeps this compatible with wire:ignore on the container below.
+            // Moving the existing marker (not re-creating it) is what keeps
+            // this compatible with wire:ignore on the container below. Only
+            // auto-pan when there's no destination point to keep in frame -
+            // with one, the initial fitBounds already shows both ends and
+            // re-panning on every tick would fight the user's own zoom/pan.
             Livewire.on(`agent-location-updated.${vendorOrderId}`, ({ lat, lng }) => {
                 this.marker.setLatLng([lat, lng]);
-                this.map.panTo([lat, lng]);
+                if (destLat === null || destLng === null) {
+                    this.map.panTo([lat, lng]);
+                }
             });
         },
 

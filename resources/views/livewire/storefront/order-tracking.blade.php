@@ -80,10 +80,16 @@
                         :lat="(float) $trackedLat"
                         :lng="(float) $trackedLng"
                         :vendor-order-id="$vendorOrder->id"
+                        :dest-lat="$order->address->lat !== null ? (float) $order->address->lat : null"
+                        :dest-lng="$order->address->lng !== null ? (float) $order->address->lng : null"
                         class="h-80 sm:h-96 w-full"
                     />
 
-                    <div class="absolute top-4 left-4 right-4 sm:right-auto sm:w-80 bg-white rounded-xl shadow-lg p-4">
+                    {{-- Fixed on top of the map for as long as this card is
+                         relevant - it has no dismiss control and nothing on
+                         this page closes it; it only stops rendering once
+                         the vendor order leaves this tracked state. --}}
+                    <div class="absolute z-10 top-4 left-4 right-4 sm:right-auto sm:w-80 bg-white rounded-xl shadow-lg p-4">
                         <div class="flex items-center justify-between mb-3">
                             <h2 class="font-bold text-gray-900">Out for delivery</h2>
                             <a href="{{ route('storefront.orders') }}" wire:navigate class="text-xs font-semibold text-green-700 hover:underline">See all orders</a>

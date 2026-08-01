@@ -10,12 +10,15 @@ class Address extends Model
     protected $fillable = [
         'user_id', 'state_id', 'lga_id', 'label',
         'area', 'street_address', 'phone', 'landmark', 'is_default',
+        'lat', 'lng',
     ];
 
     protected function casts(): array
     {
         return [
             'is_default' => 'boolean',
+            'lat' => 'decimal:7',
+            'lng' => 'decimal:7',
         ];
     }
 

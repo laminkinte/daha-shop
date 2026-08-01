@@ -18,6 +18,7 @@ use App\Models\Vendor;
 use App\Models\VendorOrder;
 use Database\Seeders\NigeriaGeographySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -119,6 +120,8 @@ class DeliveryLocationTrackingTest extends TestCase
 
     public function test_tracking_section_shows_the_live_map_once_the_agent_has_a_location(): void
     {
+        Http::fake(['nominatim.openstreetmap.org/*' => Http::response([], 200)]);
+
         $vendorOrder = $this->makeAssignedVendorOrder();
         $vendorOrder->deliveryAgent->update([
             'current_lat' => 6.5244,
@@ -155,6 +158,8 @@ class DeliveryLocationTrackingTest extends TestCase
 
     public function test_tracking_section_shows_the_live_map_for_self_delivery_once_the_vendor_has_a_location(): void
     {
+        Http::fake(['nominatim.openstreetmap.org/*' => Http::response([], 200)]);
+
         $vendorOrder = $this->makeAssignedVendorOrder();
         $vendorOrder->update(['delivery_agent_id' => null]);
         $vendorOrder->vendor->update([
@@ -209,6 +214,8 @@ class DeliveryLocationTrackingTest extends TestCase
 
     public function test_refresh_agent_location_dispatches_the_current_coordinates(): void
     {
+        Http::fake(['nominatim.openstreetmap.org/*' => Http::response([], 200)]);
+
         $vendorOrder = $this->makeAssignedVendorOrder();
         $vendorOrder->deliveryAgent->update([
             'current_lat' => 6.5244,
@@ -220,6 +227,33 @@ class DeliveryLocationTrackingTest extends TestCase
             ->test(OrderTracking::class, ['order' => $vendorOrder->order])
             ->call('refreshAgentLocation', $vendorOrder->id)
             ->assertDispatched('agent-location-updated.'.$vendorOrder->id);
+    }
+
+    public function test_tracking_map_plots_the_geocoded_destination_alongside_the_live_position(): void
+    {
+        Http::fake([
+            'nominatim.openstreetmap.org/*' => Http::response([
+                ['lat' => '6.4500', 'lon' => '3.4000'],
+            ], 200),
+        ]);
+
+        $vendorOrder = $this->makeAssignedVendorOrder();
+        $vendorOrder->deliveryAgent->update([
+            'current_lat' => 6.5244,
+            'current_lng' => 3.3792,
+            'location_updated_at' => now(),
+        ]);
+
+        $html = Livewire::actingAs($vendorOrder->order->user)
+            ->test(OrderTracking::class, ['order' => $vendorOrder->order->fresh()])
+            ->html();
+
+        $this->assertStringContainsString('destLat: 6.45', $html);
+        $this->assertStringContainsString('destLng: 3.4', $html);
+
+        $address = $vendorOrder->order->address->fresh();
+        $this->assertEqualsWithDelta(6.45, (float) $address->lat, 0.0001);
+        $this->assertEqualsWithDelta(3.4, (float) $address->lng, 0.0001);
     }
 
     public function test_refresh_agent_location_does_nothing_for_a_vendor_order_not_on_this_order(): void

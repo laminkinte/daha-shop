@@ -5,6 +5,8 @@ namespace App\Livewire\Storefront;
 use App\Enums\VendorOrderStatus;
 use App\Models\Order;
 use App\Models\Review;
+use App\Models\VendorOrder;
+use App\Services\GeocodingService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -17,10 +19,28 @@ class OrderTracking extends Component
 
     public array $comments = [];
 
-    public function mount(Order $order): void
+    public function mount(Order $order, GeocodingService $geocodingService): void
     {
         abort_unless($order->user_id === auth()->id(), 403);
         $this->order = $order->load(['vendorOrders.vendor', 'vendorOrders.items.review', 'vendorOrders.items.product.images', 'vendorOrders.deliveryPayment', 'vendorOrders.deliveryAgent', 'address.state', 'address.lga']);
+
+        // Only worth resolving the destination point when the live tracking
+        // map will actually render (an assigned agent or self-delivering
+        // vendor already has a position) - otherwise there's nothing to plot
+        // it alongside, and this is a network call we don't want to make on
+        // every order-tracking page load.
+        if ($this->order->vendorOrders->contains(fn ($vo) => $this->trackedParty($vo)?->current_lat !== null)) {
+            $geocodingService->geocode($this->order->address);
+        }
+    }
+
+    private function trackedParty(VendorOrder $vendorOrder): mixed
+    {
+        if ($vendorOrder->status !== VendorOrderStatus::OutForDelivery) {
+            return null;
+        }
+
+        return $vendorOrder->deliveryAgent ?? $vendorOrder->vendor;
     }
 
     /**
