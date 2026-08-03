@@ -108,6 +108,16 @@ class OrderTrackingCartActionsTest extends TestCase
         $this->assertSame(2, $cartItem->quantity);
     }
 
+    public function test_buy_now_and_add_to_cart_buttons_show_on_a_delivered_non_tracked_order(): void
+    {
+        $vendorOrder = $this->makeDeliveredVendorOrderWithItems();
+
+        Livewire::actingAs($vendorOrder->order->user)
+            ->test(OrderTracking::class, ['order' => $vendorOrder->order])
+            ->assertSee('Buy Now')
+            ->assertSee('Add to Cart');
+    }
+
     public function test_add_to_cart_accumulates_quantity_on_repeat_calls(): void
     {
         $vendorOrder = $this->makeDeliveredVendorOrderWithItems();
