@@ -3,9 +3,11 @@
 namespace App\Livewire\Storefront;
 
 use App\Enums\VendorOrderStatus;
+use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Review;
 use App\Models\VendorOrder;
+use App\Services\CartResolver;
 use App\Services\GeocodingService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -72,6 +74,40 @@ class OrderTracking extends Component
             lat: (float) $tracked->current_lat,
             lng: (float) $tracked->current_lng,
         );
+    }
+
+    /**
+     * Re-adds this vendor-order's items to the cart, same logic as
+     * OrderHistory::reorder() but scoped to a single vendor-order rather
+     * than the whole (possibly multi-vendor) order, since that's the
+     * granularity of the card these buttons live on.
+     */
+    public function addToCart(int $vendorOrderId, CartResolver $resolver): void
+    {
+        $vendorOrder = $this->order->vendorOrders->firstWhere('id', $vendorOrderId);
+
+        abort_unless($vendorOrder, 404);
+
+        $cart = $resolver->current();
+
+        foreach ($vendorOrder->items as $item) {
+            $cartItem = CartItem::firstOrNew([
+                'cart_id' => $cart->id,
+                'product_id' => $item->product_id,
+                'product_variant_id' => $item->product_variant_id,
+            ]);
+            $cartItem->quantity = ($cartItem->quantity ?? 0) + $item->quantity;
+            $cartItem->save();
+        }
+
+        $this->dispatch('cart-updated');
+    }
+
+    public function buyNow(int $vendorOrderId, CartResolver $resolver): void
+    {
+        $this->addToCart($vendorOrderId, $resolver);
+
+        $this->redirect(route('storefront.checkout'), navigate: true);
     }
 
     public function submitReview(int $orderItemId): void

@@ -129,6 +129,17 @@
                                 </div>
                             @endforeach
                         </div>
+
+                        <div class="flex gap-2 mt-4">
+                            <button wire:click="addToCart({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="addToCart({{ $vendorOrder->id }})"
+                                class="flex-1 text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg py-2 transition-colors disabled:opacity-50">
+                                Add to Cart
+                            </button>
+                            <button wire:click="buyNow({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="buyNow({{ $vendorOrder->id }})"
+                                class="flex-1 text-xs font-semibold bg-green-700 hover:bg-green-800 text-white rounded-lg py-2 transition-colors disabled:opacity-50">
+                                Buy Now
+                            </button>
+                        </div>
                     </div>
                 </div>
             @endif
