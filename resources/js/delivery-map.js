@@ -7,6 +7,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('deliveryMap', ({ lat, lng, vendorOrderId, destLat = null, destLng = null }) => ({
         map: null,
         marker: null,
+        _unsubscribe: null,
 
         async init() {
             // Lazily loaded for the same reason jsQR/face-api.js are lazy in
@@ -70,7 +71,7 @@ document.addEventListener('alpine:init', () => {
             // auto-pan when there's no destination point to keep in frame -
             // with one, the initial fitBounds already shows both ends and
             // re-panning on every tick would fight the user's own zoom/pan.
-            Livewire.on(`agent-location-updated.${vendorOrderId}`, ({ lat, lng }) => {
+            this._unsubscribe = Livewire.on(`agent-location-updated.${vendorOrderId}`, ({ lat, lng }) => {
                 this.marker.setLatLng([lat, lng]);
                 if (destLat === null || destLng === null) {
                     this.map.panTo([lat, lng]);
@@ -83,6 +84,11 @@ document.addEventListener('alpine:init', () => {
             // call L.map() again on a DOM node Leaflet already initialized,
             // which throws "Map container is already initialized".
             this.map?.remove();
+
+            // Livewire.on() listeners otherwise outlive this component -
+            // without unsubscribing, revisiting this page via wire:navigate
+            // stacks up duplicate listeners for the same event.
+            this._unsubscribe?.();
         },
     }));
 });
