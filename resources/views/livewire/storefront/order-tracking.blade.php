@@ -130,14 +130,14 @@
                             @endforeach
                         </div>
 
-                        <div class="flex gap-2 mt-4">
-                            <button wire:click="addToCart({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="addToCart({{ $vendorOrder->id }})"
-                                class="flex-1 text-xs font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg py-2 transition-colors disabled:opacity-50">
-                                Add to Cart
-                            </button>
+                        <div class="flex flex-col gap-2 mt-4">
                             <button wire:click="buyNow({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="buyNow({{ $vendorOrder->id }})"
-                                class="flex-1 text-xs font-semibold bg-green-700 hover:bg-green-800 text-white rounded-lg py-2 transition-colors disabled:opacity-50">
+                                class="w-full text-sm font-semibold bg-green-700 hover:bg-green-800 text-white rounded-full py-2.5 transition-colors disabled:opacity-50">
                                 Buy Now
+                            </button>
+                            <button wire:click="addToCart({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="addToCart({{ $vendorOrder->id }})"
+                                class="w-full text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full py-2.5 transition-colors disabled:opacity-50">
+                                Add to Cart
                             </button>
                         </div>
                     </div>
