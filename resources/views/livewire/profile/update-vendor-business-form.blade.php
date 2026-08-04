@@ -47,31 +47,37 @@ new class extends Component
 }; ?>
 
 <section>
-    <header class="flex items-start justify-between flex-wrap gap-2">
-        <div>
-            <h2 class="text-lg font-semibold text-gray-800">
-                {{ __('Business Details') }}
-            </h2>
+    @php $vendor = auth()->user()->vendor; @endphp
+    <div class="px-6 py-4 border-b border-gray-100 flex items-start justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-3">
+            <div class="h-9 w-9 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72" /></svg>
+            </div>
+            <div>
+                <h2 class="font-semibold text-gray-800">
+                    {{ __('Business Details') }}
+                </h2>
 
-            <p class="mt-1 text-sm text-gray-500">
-                {{ __('Your storefront details and where payouts are sent.') }}
-            </p>
+                <p class="text-xs text-gray-500">
+                    {{ __('Your storefront details and where payouts are sent.') }}
+                </p>
+            </div>
         </div>
 
-        @php $vendor = auth()->user()->vendor; @endphp
         <span class="text-xs font-semibold px-2.5 py-1 rounded-full capitalize {{ $vendor->status->value === 'approved' ? 'bg-emerald-50 text-emerald-700' : ($vendor->status->value === 'suspended' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700') }}">
             {{ $vendor->status->value }}
         </span>
-    </header>
+    </div>
 
-    @if ($vendor->needsIdDocumentRetake() || $vendor->needsSelfieRetake())
-        <div class="mt-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
-            An admin has asked you to retake a KYC photo.
-            <a href="{{ route('vendor.identity') }}" wire:navigate class="font-semibold underline">Resubmit it here</a>.
-        </div>
-    @endif
+    <div class="p-6">
+        @if ($vendor->needsIdDocumentRetake() || $vendor->needsSelfieRetake())
+            <div class="mb-6 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+                An admin has asked you to retake a KYC photo.
+                <a href="{{ route('vendor.identity') }}" wire:navigate class="font-semibold underline">Resubmit it here</a>.
+            </div>
+        @endif
 
-    <form wire:submit="updateBusinessInfo" class="mt-6 space-y-6">
+        <form wire:submit="updateBusinessInfo" class="space-y-6">
         <div>
             <x-input-label for="business_name" :value="__('Business Name')" />
             <x-text-input wire:model="business_name" id="business_name" type="text" class="mt-1 block w-full" required />
@@ -122,5 +128,6 @@ new class extends Component
                 {{ __('Saved.') }}
             </x-action-message>
         </div>
-    </form>
+        </form>
+    </div>
 </section>
