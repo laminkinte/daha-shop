@@ -329,4 +329,120 @@ class OrderLifecycleTest extends TestCase
         $this->expectException(\App\Exceptions\CustomerBlacklistedException::class);
         app(CheckoutService::class)->placeOrder($customer, $cart->fresh('items'), $address);
     }
+
+    public function test_checkout_rejects_a_blacklisted_email_even_with_a_different_phone(): void
+    {
+        $this->seed(NigeriaGeographySeeder::class);
+        $lagos = State::where('name', 'Lagos')->firstOrFail();
+        $ikeja = $lagos->lgas()->where('name', 'Ikeja')->firstOrFail();
+        $category = Category::create(['name' => 'Phones', 'slug' => 'phones']);
+
+        $vendorUser = User::factory()->vendor()->create();
+        $vendor = Vendor::create([
+            'user_id' => $vendorUser->id,
+            'business_name' => 'Test Electronics',
+            'slug' => 'test-electronics-4',
+            'business_phone' => '+2348012340003',
+            'business_address' => '1 Test Street',
+            'status' => VendorStatus::Approved,
+        ]);
+
+        $product = Product::create([
+            'vendor_id' => $vendor->id,
+            'category_id' => $category->id,
+            'name' => 'Test Phone 4',
+            'slug' => 'test-phone-4',
+            'base_price' => 1000000,
+            'stock' => 5,
+            'status' => 'published',
+        ]);
+
+        \App\Models\BlacklistedNumber::create([
+            'email' => 'known.badactor@example.com',
+            'reason' => 'Chargeback fraud',
+            'blocked_at' => now(),
+        ]);
+
+        // Different phone from anything already blacklisted - only the
+        // email should be what trips the block.
+        $customer = User::factory()->create(['phone' => '+2348099992222', 'email' => 'known.badactor@example.com']);
+        $address = Address::create([
+            'user_id' => $customer->id,
+            'state_id' => $lagos->id,
+            'lga_id' => $ikeja->id,
+            'area' => 'Allen Avenue',
+            'street_address' => '10 Test Close',
+            'phone' => '+2348099992222',
+            'is_default' => true,
+        ]);
+
+        $cart = Cart::create(['user_id' => $customer->id]);
+        CartItem::create(['cart_id' => $cart->id, 'product_id' => $product->id, 'quantity' => 1]);
+
+        $this->expectException(\App\Exceptions\CustomerBlacklistedException::class);
+        app(CheckoutService::class)->placeOrder($customer, $cart->fresh('items'), $address);
+    }
+
+    public function test_checkout_ignores_a_phone_pin_accounts_synthetic_email_when_checking_the_blacklist(): void
+    {
+        $this->seed(NigeriaGeographySeeder::class);
+        $lagos = State::where('name', 'Lagos')->firstOrFail();
+        $ikeja = $lagos->lgas()->where('name', 'Ikeja')->firstOrFail();
+        $category = Category::create(['name' => 'Phones', 'slug' => 'phones']);
+
+        $vendorUser = User::factory()->vendor()->create();
+        $vendor = Vendor::create([
+            'user_id' => $vendorUser->id,
+            'business_name' => 'Test Electronics',
+            'slug' => 'test-electronics-5',
+            'business_phone' => '+2348012340004',
+            'business_address' => '1 Test Street',
+            'status' => VendorStatus::Approved,
+        ]);
+
+        $product = Product::create([
+            'vendor_id' => $vendor->id,
+            'category_id' => $category->id,
+            'name' => 'Test Phone 5',
+            'slug' => 'test-phone-5',
+            'base_price' => 1000000,
+            'stock' => 5,
+            'status' => 'published',
+        ]);
+
+        $zone = DeliveryZone::create(['name' => 'Ikeja Zone', 'state_id' => $lagos->id, 'lga_id' => $ikeja->id]);
+        DeliveryFee::create(['delivery_zone_id' => $zone->id, 'vendor_id' => null, 'fee' => 150000]);
+
+        $customer = User::factory()->create([
+            'phone' => '+2348099993333',
+            'email' => 'x08099993333@phone.dahashop.internal',
+            'uses_pin' => true,
+        ]);
+
+        // Blacklist that exact synthetic placeholder email - it should never
+        // be checked against, since it isn't a real address the customer
+        // controls.
+        \App\Models\BlacklistedNumber::create([
+            'email' => 'x08099993333@phone.dahashop.internal',
+            'reason' => 'Should never match',
+            'blocked_at' => now(),
+        ]);
+
+        $address = Address::create([
+            'user_id' => $customer->id,
+            'state_id' => $lagos->id,
+            'lga_id' => $ikeja->id,
+            'area' => 'Allen Avenue',
+            'street_address' => '10 Test Close',
+            'phone' => '+2348099993333',
+            'is_default' => true,
+        ]);
+
+        $cart = Cart::create(['user_id' => $customer->id]);
+        CartItem::create(['cart_id' => $cart->id, 'product_id' => $product->id, 'quantity' => 1]);
+
+        $order = app(CheckoutService::class)->placeOrder($customer, $cart->fresh('items'), $address);
+
+        $this->assertNotNull($order);
+    }
 }

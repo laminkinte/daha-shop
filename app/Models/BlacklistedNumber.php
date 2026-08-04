@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class BlacklistedNumber extends Model
 {
-    protected $fillable = ['phone', 'reason', 'blocked_at'];
+    protected $fillable = ['phone', 'email', 'reason', 'blocked_at'];
 
     protected function casts(): array
     {

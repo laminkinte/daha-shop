@@ -35,7 +35,16 @@ class CheckoutService
             throw new EmptyCartException;
         }
 
-        if (BlacklistedNumber::where('phone', $address->phone)->exists()) {
+        // Checked against both the delivery phone and the account's real
+        // email (skipped for phone/PIN accounts, whose "email" is just a
+        // synthetic placeholder - see User::hasRealEmail()) - blocking on
+        // only one identifier would let a blocked customer straight back in
+        // by reusing the other one on a new order.
+        $isBlacklisted = BlacklistedNumber::where('phone', $address->phone)
+            ->when($user->hasRealEmail(), fn ($query) => $query->orWhere('email', $user->email))
+            ->exists();
+
+        if ($isBlacklisted) {
             throw new CustomerBlacklistedException;
         }
 

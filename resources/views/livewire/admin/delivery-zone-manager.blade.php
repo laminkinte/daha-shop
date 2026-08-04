@@ -1,6 +1,6 @@
 <div>
     <div class="flex justify-end mb-4">
-        <button wire:click="$set('showForm', true)" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+        <button wire:click="openCreateForm" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
             + Add Delivery Zone
         </button>
     </div>
@@ -8,7 +8,7 @@
     @if ($showForm)
         <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-xl border border-gray-100 shadow-xl w-full max-w-md p-6">
-                <h2 class="font-semibold text-lg mb-4">Add Delivery Zone</h2>
+                <h2 class="font-semibold text-lg mb-4">{{ $stateId ? 'Edit Delivery Zone' : 'Add Delivery Zone' }}</h2>
                 <div class="space-y-4">
                     <div>
                         <label class="text-sm font-medium text-gray-700">State</label>
@@ -37,7 +37,7 @@
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
-                    <button wire:click="$set('showForm', false)" class="text-sm text-gray-600 px-4 py-2 hover:text-gray-800">Cancel</button>
+                    <button wire:click="cancel" class="text-sm text-gray-600 px-4 py-2 hover:text-gray-800">Cancel</button>
                     <button wire:click="create" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">Save</button>
                 </div>
             </div>
@@ -51,6 +51,7 @@
                     <th class="px-4 py-3 text-left">Zone</th>
                     <th class="px-4 py-3 text-left">State</th>
                     <th class="px-4 py-3 text-left">Base Fee</th>
+                    <th class="px-4 py-3"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -59,9 +60,12 @@
                         <td class="px-4 py-3 font-medium">{{ $zone->name }}</td>
                         <td class="px-4 py-3 text-gray-500">{{ $zone->state->name }}</td>
                         <td class="px-4 py-3">{{ naira($zone->fees->firstWhere('vendor_id', null)?->fee ?? 0) }}</td>
+                        <td class="px-4 py-3 text-right">
+                            <button wire:click="edit({{ $zone->id }})" class="text-xs font-semibold text-green-700 hover:text-green-800">Edit</button>
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="3" class="px-4 py-8 text-center text-gray-500">No delivery zones configured yet.</td></tr>
+                    <tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No delivery zones configured yet.</td></tr>
                 @endforelse
             </tbody>
         </table>

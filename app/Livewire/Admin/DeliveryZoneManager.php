@@ -24,6 +24,34 @@ class DeliveryZoneManager extends Component
         return $this->stateId ? State::find($this->stateId)?->lgas()->orderBy('name')->get() : collect();
     }
 
+    public function openCreateForm(): void
+    {
+        $this->reset(['stateId', 'lgaId', 'fee']);
+        $this->showForm = true;
+    }
+
+    public function cancel(): void
+    {
+        $this->reset(['showForm', 'stateId', 'lgaId', 'fee']);
+    }
+
+    /**
+     * Pre-fills the form with an existing zone's state/LGA/fee and opens it -
+     * create() already does an updateOrCreate on the fee, so re-submitting
+     * the same state+LGA here updates it in place rather than duplicating.
+     * There was previously no way to change a zone's fee once set without
+     * going around the UI entirely.
+     */
+    public function edit(int $zoneId): void
+    {
+        $zone = DeliveryZone::with('fees')->findOrFail($zoneId);
+
+        $this->stateId = $zone->state_id;
+        $this->lgaId = $zone->lga_id;
+        $this->fee = number_format(($zone->fees->firstWhere('vendor_id', null)?->fee ?? 0) / 100, 2, '.', '');
+        $this->showForm = true;
+    }
+
     public function create(): void
     {
         $this->validate([

@@ -14,22 +14,32 @@ class BlacklistManager extends Component
 
     public string $phone = '';
 
+    public string $email = '';
+
     public string $reason = '';
 
+    /**
+     * A blocked customer could sign up again with a different phone number
+     * tied to the same email, or vice versa - blocking on whichever
+     * identifier the admin actually has (phone, email, or both) closes
+     * that gap instead of requiring both every time.
+     */
     public function add(): void
     {
         $this->validate([
-            'phone' => 'required|string|unique:blacklisted_numbers,phone',
+            'phone' => 'required_without:email|nullable|string|unique:blacklisted_numbers,phone',
+            'email' => 'required_without:phone|nullable|string|email|unique:blacklisted_numbers,email',
             'reason' => 'nullable|string|max:255',
         ]);
 
         BlacklistedNumber::create([
-            'phone' => $this->phone,
+            'phone' => $this->phone ?: null,
+            'email' => $this->email ?: null,
             'reason' => $this->reason ?: null,
             'blocked_at' => now(),
         ]);
 
-        $this->reset(['phone', 'reason']);
+        $this->reset(['phone', 'email', 'reason']);
     }
 
     public function remove(int $id): void
