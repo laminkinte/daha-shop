@@ -59,6 +59,13 @@
             $steps = $vendorOrder->isPickup() ? $pickupSteps : $deliverySteps;
             $stepKeys = array_keys($steps);
             $isFulfilled = in_array($vendorOrder->status->value, ['delivered', 'picked_up'], true);
+            // "Buy again"-style actions only make sense once this
+            // vendor-order is fulfilled, or while it's actively being
+            // tracked (matching Amazon, which still shows "Buy again" on an
+            // in-transit order) - not while it's merely pending, packed, or
+            // sitting in a rejected/failed/cancelled state, where prompting
+            // a repeat purchase isn't the obvious next action.
+            $showReorderActions = $isFulfilled;
             // Whoever is actually out delivering this order: the assigned
             // agent, or the vendor themselves when self-delivering (no
             // agent assigned) - see OrderTracking::refreshAgentLocation().
@@ -128,6 +135,17 @@
                                     @endif
                                 </div>
                             @endforeach
+                        </div>
+
+                        <div class="flex flex-col gap-2 mt-4">
+                            <button wire:click="buyNow({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="buyNow({{ $vendorOrder->id }})"
+                                class="w-full text-sm font-semibold bg-green-700 hover:bg-green-800 text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">
+                                Buy Now
+                            </button>
+                            <button wire:click="addToCart({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="addToCart({{ $vendorOrder->id }})"
+                                class="w-full text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg py-2.5 transition-colors disabled:opacity-50">
+                                Add to Cart
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -218,16 +236,18 @@
                     </div>
                 @endif
 
-                <div class="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2">
-                    <button wire:click="buyNow({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="buyNow({{ $vendorOrder->id }})"
-                        class="w-full text-sm font-semibold bg-green-700 hover:bg-green-800 text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">
-                        Buy Now
-                    </button>
-                    <button wire:click="addToCart({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="addToCart({{ $vendorOrder->id }})"
-                        class="w-full text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg py-2.5 transition-colors disabled:opacity-50">
-                        Add to Cart
-                    </button>
-                </div>
+                @if ($showReorderActions && ! $isLiveTracked)
+                    <div class="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2">
+                        <button wire:click="buyNow({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="buyNow({{ $vendorOrder->id }})"
+                            class="w-full text-sm font-semibold bg-green-700 hover:bg-green-800 text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">
+                            Buy Now
+                        </button>
+                        <button wire:click="addToCart({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="addToCart({{ $vendorOrder->id }})"
+                            class="w-full text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg py-2.5 transition-colors disabled:opacity-50">
+                            Add to Cart
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
     @endforeach

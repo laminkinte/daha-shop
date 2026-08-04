@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AgentAvailability;
 use App\Enums\VendorOrderStatus;
 use App\Enums\VendorStatus;
 use App\Livewire\Storefront\OrderTracking;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Category;
+use App\Models\DeliveryAgent;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -17,6 +19,7 @@ use App\Models\Vendor;
 use App\Models\VendorOrder;
 use Database\Seeders\NigeriaGeographySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -24,7 +27,7 @@ class OrderTrackingCartActionsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function makeDeliveredVendorOrderWithItems(): VendorOrder
+    private function makeDeliveredVendorOrderWithItems(VendorOrderStatus $status = VendorOrderStatus::Delivered): VendorOrder
     {
         if (State::count() === 0) {
             $this->seed(NigeriaGeographySeeder::class);
@@ -74,7 +77,7 @@ class OrderTrackingCartActionsTest extends TestCase
         $vendorOrder = VendorOrder::create([
             'order_id' => $order->id,
             'vendor_id' => $vendor->id,
-            'status' => VendorOrderStatus::Delivered,
+            'status' => $status,
             'items_subtotal' => 5000000,
             'delivery_fee' => 0,
         ]);
@@ -114,6 +117,53 @@ class OrderTrackingCartActionsTest extends TestCase
 
         Livewire::actingAs($vendorOrder->order->user)
             ->test(OrderTracking::class, ['order' => $vendorOrder->order])
+            ->assertSee('Buy Now')
+            ->assertSee('Add to Cart');
+    }
+
+    public function test_buy_now_and_add_to_cart_buttons_are_absent_while_order_is_still_in_progress(): void
+    {
+        $vendorOrder = $this->makeDeliveredVendorOrderWithItems(VendorOrderStatus::Accepted);
+
+        Livewire::actingAs($vendorOrder->order->user)
+            ->test(OrderTracking::class, ['order' => $vendorOrder->order])
+            ->assertDontSee('Buy Now')
+            ->assertDontSee('Add to Cart');
+    }
+
+    public function test_buy_now_and_add_to_cart_buttons_are_absent_for_a_rejected_order(): void
+    {
+        $vendorOrder = $this->makeDeliveredVendorOrderWithItems(VendorOrderStatus::Rejected);
+
+        Livewire::actingAs($vendorOrder->order->user)
+            ->test(OrderTracking::class, ['order' => $vendorOrder->order])
+            ->assertDontSee('Buy Now')
+            ->assertDontSee('Add to Cart');
+    }
+
+    public function test_buy_now_and_add_to_cart_buttons_show_inside_the_live_tracking_hero(): void
+    {
+        Http::fake(['nominatim.openstreetmap.org/*' => Http::response([], 200)]);
+
+        $vendorOrder = $this->makeDeliveredVendorOrderWithItems(VendorOrderStatus::OutForDelivery);
+
+        $state = State::first();
+        $lga = $state->lgas()->first();
+        $agentUser = User::factory()->agent()->create();
+        $agent = DeliveryAgent::create([
+            'user_id' => $agentUser->id,
+            'state_id' => $state->id,
+            'lga_id' => $lga->id,
+            'availability' => AgentAvailability::Available,
+            'current_lat' => 6.5244,
+            'current_lng' => 3.3792,
+            'location_updated_at' => now(),
+        ]);
+        $vendorOrder->update(['delivery_agent_id' => $agent->id]);
+
+        Livewire::actingAs($vendorOrder->order->user)
+            ->test(OrderTracking::class, ['order' => $vendorOrder->order->fresh()])
+            ->assertSee('Arriving today')
             ->assertSee('Buy Now')
             ->assertSee('Add to Cart');
     }
