@@ -61,7 +61,18 @@ class ProductCatalog extends Component
         $products = Product::query()
             ->where('status', ProductStatus::Published)
             ->when($this->q, fn ($query) => $query->where('name', 'like', "%{$this->q}%"))
-            ->when($this->category, fn ($query) => $query->where('category_id', $this->category))
+            // Vendors only ever assign a child category to a product (see
+            // ProductManager), never the parent shown here as a browsing
+            // filter - so filtering by the parent's id alone would never
+            // match anything. Match the parent itself (defensive) or any
+            // of its children.
+            ->when($this->category, function ($query) {
+                $categoryIds = Category::where('id', $this->category)
+                    ->orWhere('parent_id', $this->category)
+                    ->pluck('id');
+
+                $query->whereIn('category_id', $categoryIds);
+            })
             ->when($this->sort === 'price_low', fn ($query) => $query->orderBy('base_price'))
             ->when($this->sort === 'price_high', fn ($query) => $query->orderByDesc('base_price'))
             ->when($this->sort === 'newest', fn ($query) => $query->latest())

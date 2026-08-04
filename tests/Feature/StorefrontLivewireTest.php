@@ -69,6 +69,43 @@ class StorefrontLivewireTest extends TestCase
         Livewire::test(Cart::class)->assertSee('Test Phone');
     }
 
+    /**
+     * Vendors only ever assign a child category to a product (see
+     * ProductManager), but the storefront's category browsing filter shows
+     * parent categories - clicking one must still surface products filed
+     * under any of its children, not just an exact id match.
+     */
+    public function test_catalog_category_filter_includes_products_in_child_categories(): void
+    {
+        $this->seed(NigeriaGeographySeeder::class);
+        $parent = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
+        $child = Category::create(['name' => 'TVs', 'slug' => 'tvs', 'parent_id' => $parent->id]);
+
+        $vendorUser = User::factory()->vendor()->create();
+        $vendor = Vendor::create([
+            'user_id' => $vendorUser->id,
+            'business_name' => 'Test Electronics',
+            'slug' => 'test-electronics-catfilter',
+            'business_phone' => '+2348012340000',
+            'business_address' => '1 Test Street',
+            'status' => VendorStatus::Approved,
+        ]);
+
+        Product::create([
+            'vendor_id' => $vendor->id,
+            'category_id' => $child->id,
+            'name' => 'Smart TV 55"',
+            'slug' => 'smart-tv-55',
+            'base_price' => 25000000,
+            'stock' => 5,
+            'status' => 'published',
+        ]);
+
+        Livewire::test(ProductCatalog::class)
+            ->set('category', $parent->id)
+            ->assertSee('Smart TV 55"');
+    }
+
     public function test_product_detail_add_to_cart_and_wishlist_toggle(): void
     {
         $product = $this->makeProduct();
