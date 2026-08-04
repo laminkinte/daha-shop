@@ -9,19 +9,30 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-                <h2 class="font-semibold text-gray-800 mb-4">Delivery Address</h2>
+            <div class="bg-white rounded-xl border-2 border-green-200 shadow-sm p-6">
+                <div class="flex items-center gap-2 mb-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                    <h2 class="font-semibold text-gray-800">Confirm Delivery Address</h2>
+                </div>
+                <p class="text-xs text-gray-500 mb-4">This is where your order will be sent - double-check it before placing your order.</p>
 
                 @if ($addresses->isNotEmpty())
                     <div class="space-y-2 mb-4">
                         @foreach ($addresses as $address)
-                            <label class="flex items-start gap-3 border rounded-lg p-3 cursor-pointer transition-colors {{ !$useNewAddress && $selectedAddressId === $address->id ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-gray-300' }}">
+                            @php $isSelected = !$useNewAddress && $selectedAddressId === $address->id; @endphp
+                            <label class="flex items-start gap-3 border-2 rounded-lg p-3 cursor-pointer transition-colors {{ $isSelected ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-gray-300' }}">
                                 <input type="radio" wire:click="$set('useNewAddress', false)" wire:model="selectedAddressId" value="{{ $address->id }}" class="mt-1">
-                                <span class="text-sm">
+                                <span class="text-sm flex-1">
                                     <span class="font-medium">{{ $address->label }}</span> &mdash;
                                     {{ $address->street_address }}, {{ $address->area }}, {{ $address->lga->name }}, {{ $address->state->name }}
                                     <br><span class="text-gray-500">{{ $address->phone }}</span>
                                 </span>
+                                @if ($isSelected)
+                                    <span class="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-green-700">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" /></svg>
+                                        Selected
+                                    </span>
+                                @endif
                             </label>
                         @endforeach
                     </div>
