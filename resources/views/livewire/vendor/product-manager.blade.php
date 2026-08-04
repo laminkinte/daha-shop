@@ -6,8 +6,7 @@
         </div>
     @endif
 
-    <div class="flex items-center justify-between mb-4">
-        <div></div>
+    <div class="flex items-center justify-end mb-4">
         <button wire:click="create" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
             + Add Product
         </button>

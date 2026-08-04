@@ -186,13 +186,44 @@
         <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false" class="fixed inset-0 z-20 bg-black/40 lg:hidden"></div>
 
         <div class="flex-1 min-w-0">
+            @php
+                // No page ever sets $header explicitly, so every dashboard
+                // page's topbar title was blank - this maps each route name
+                // to the same label already used for it in the sidebar, so
+                // the two stay in sync with one list to maintain.
+                $dashboardTitles = [
+                    'vendor.dashboard' => 'Overview',
+                    'vendor.products' => 'Products',
+                    'vendor.orders' => 'Orders',
+                    'vendor.payouts' => 'Payouts',
+                    'vendor.qr-code' => 'Shop QR Code',
+                    'vendor.identity' => 'Identity Verification',
+                    'vendor.subscription' => 'Subscription',
+                    'admin.dashboard' => 'Overview',
+                    'admin.vendors' => 'Vendors',
+                    'admin.products' => 'Products',
+                    'admin.orders' => 'Orders',
+                    'admin.dispatch' => 'Dispatch',
+                    'admin.reconciliation' => 'Reconciliation',
+                    'admin.agents' => 'Delivery Agents',
+                    'admin.delivery-zones' => 'Delivery Zones',
+                    'admin.blacklist' => 'Blacklist',
+                    'admin.payouts' => 'Vendor Payouts',
+                    'admin.settings' => 'Business Settings',
+                    'admin.admins' => 'Admins',
+                    'agent.deliveries' => 'Assigned Deliveries',
+                    'agent.deliveries.show' => 'Delivery Details',
+                    'agent.remittance' => 'Cash Remittance',
+                ];
+                $pageTitle = $header ?? ($dashboardTitles[request()->route()?->getName()] ?? '');
+            @endphp
             <!-- Topbar -->
             <div class="h-16 bg-white/80 backdrop-blur border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-10">
                 <div class="flex items-center gap-3">
                     <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden text-gray-500">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
-                    <h1 class="text-lg font-semibold text-gray-800">{{ $header ?? '' }}</h1>
+                    <h1 class="text-lg font-semibold text-gray-800">{{ $pageTitle }}</h1>
                 </div>
                 <div class="flex items-center gap-2">
                     <livewire:notification-bell />
