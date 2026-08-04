@@ -1,40 +1,24 @@
 <div>
     <!-- Hero -->
     <section class="bg-gradient-to-br from-green-700 to-green-800 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
-            <div class="max-w-2xl">
-                <span class="inline-block bg-white/10 text-green-100 text-xs font-semibold tracking-wide uppercase px-3 py-1 rounded-full mb-4">
-                    Cash on Delivery &middot; Nationwide
-                </span>
-                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
-                    Shop the marketplace &mdash; pay when it arrives.
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                <h1 class="text-2xl sm:text-3xl font-bold leading-tight">
+                    Shop now, pay on delivery.
                 </h1>
-                <p class="mt-4 text-lg text-green-100 max-w-xl">
-                    No card needed. Confirm your order by SMS, and pay cash from verified sellers &mdash; tracked every step of the way.
-                </p>
 
-                <div class="mt-8 flex flex-wrap gap-3">
-                    <a href="#products" class="bg-white text-green-700 font-semibold px-6 py-3 rounded-lg shadow-sm hover:bg-green-50 transition-colors">
-                        Shop Now
-                    </a>
-                    <a href="{{ route('register') }}?as=seller" wire:navigate class="border border-white/40 text-white font-semibold px-6 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-green-100">
+                    <span class="flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Cash on delivery
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        {{ $stats['vendors'] }}+ verified sellers
+                    </span>
+                    <a href="{{ route('register') }}?as=seller" wire:navigate class="font-semibold underline hover:text-white">
                         Become a Seller
                     </a>
-                </div>
-            </div>
-
-            <div class="mt-12 pt-8 border-t border-white/20 flex flex-wrap gap-x-10 gap-y-4">
-                <div>
-                    <div class="text-2xl font-bold">{{ $stats['products'] }}+</div>
-                    <div class="text-xs text-green-100 mt-1">Products Listed</div>
-                </div>
-                <div>
-                    <div class="text-2xl font-bold">{{ $stats['vendors'] }}+</div>
-                    <div class="text-xs text-green-100 mt-1">Verified Sellers</div>
-                </div>
-                <div>
-                    <div class="text-2xl font-bold">37</div>
-                    <div class="text-xs text-green-100 mt-1">States Covered</div>
                 </div>
             </div>
         </div>
