@@ -220,11 +220,11 @@
 
                 <div class="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2">
                     <button wire:click="buyNow({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="buyNow({{ $vendorOrder->id }})"
-                        class="w-full text-sm font-semibold bg-green-700 hover:bg-green-800 text-white rounded-full py-2.5 transition-colors disabled:opacity-50">
+                        class="w-full text-sm font-semibold bg-green-700 hover:bg-green-800 text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">
                         Buy Now
                     </button>
                     <button wire:click="addToCart({{ $vendorOrder->id }})" wire:loading.attr="disabled" wire:target="addToCart({{ $vendorOrder->id }})"
-                        class="w-full text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full py-2.5 transition-colors disabled:opacity-50">
+                        class="w-full text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg py-2.5 transition-colors disabled:opacity-50">
                         Add to Cart
                     </button>
                 </div>
