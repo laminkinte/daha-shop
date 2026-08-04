@@ -40,12 +40,19 @@
                 <input type="number" wire:model="quantity" min="1" class="w-20 rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
             </div>
 
-            <div class="mt-6 flex gap-3">
-                <button wire:click="addToCart" class="flex-1 bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-lg transition-colors">
+            <div class="mt-6 flex flex-col gap-3">
+                <div class="flex gap-3">
+                    <button wire:click="buyNow" wire:loading.attr="disabled" wire:target="buyNow"
+                        class="flex-1 bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50">
+                        Buy Now
+                    </button>
+                    <button wire:click="toggleWishlist" class="border border-gray-300 rounded-lg px-4 py-3 transition-colors {{ $this->inWishlist ? 'text-red-600 border-red-300 bg-red-50' : 'text-gray-500 hover:bg-gray-50' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="{{ $this->inWishlist ? 'currentColor' : 'none' }}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+                    </button>
+                </div>
+                <button wire:click="addToCart" wire:loading.attr="disabled" wire:target="addToCart"
+                    class="w-full border border-green-700 text-green-700 hover:bg-green-50 font-semibold py-3 rounded-lg transition-colors disabled:opacity-50">
                     Add to Cart
-                </button>
-                <button wire:click="toggleWishlist" class="border border-gray-300 rounded-lg px-4 py-3 transition-colors {{ $this->inWishlist ? 'text-red-600 border-red-300 bg-red-50' : 'text-gray-500 hover:bg-gray-50' }}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="{{ $this->inWishlist ? 'currentColor' : 'none' }}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
                 </button>
             </div>
 

@@ -60,6 +60,13 @@ class ProductDetail extends Component
         session()->flash('cart_message', "{$this->product->name} added to cart.");
     }
 
+    public function buyNow(CartResolver $resolver): void
+    {
+        $this->addToCart($resolver);
+
+        $this->redirect(route('storefront.checkout'), navigate: true);
+    }
+
     public function toggleWishlist(): void
     {
         if (! Auth::check()) {

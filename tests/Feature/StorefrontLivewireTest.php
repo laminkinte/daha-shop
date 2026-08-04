@@ -83,6 +83,20 @@ class StorefrontLivewireTest extends TestCase
             ->assertSet('inWishlist', true);
     }
 
+    public function test_product_detail_buy_now_adds_to_cart_and_redirects_to_checkout(): void
+    {
+        $product = $this->makeProduct();
+        $customer = User::factory()->create();
+
+        Livewire::actingAs($customer)
+            ->test(ProductDetail::class, ['product' => $product])
+            ->call('buyNow')
+            ->assertRedirect(route('storefront.checkout'));
+
+        $cart = \App\Models\Cart::where('user_id', $customer->id)->firstOrFail();
+        $this->assertNotNull($cart->items()->where('product_id', $product->id)->first());
+    }
+
     public function test_checkout_flow_places_order_and_otp_verification_confirms_it(): void
     {
         $product = $this->makeProduct();
