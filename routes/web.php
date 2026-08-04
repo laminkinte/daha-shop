@@ -24,14 +24,19 @@ use App\Livewire\Admin\VendorApprovals;
 use App\Livewire\Agent\AssignedDeliveries;
 use App\Livewire\Agent\DeliveryDetail;
 use App\Livewire\Agent\RemittanceForm;
+use App\Livewire\Storefront\AboutPage;
 use App\Livewire\Storefront\Cart;
 use App\Livewire\Storefront\Checkout;
+use App\Livewire\Storefront\ContactPage;
+use App\Livewire\Storefront\FaqPage;
 use App\Livewire\Storefront\OrderHistory;
 use App\Livewire\Storefront\OrderTracking;
 use App\Livewire\Storefront\OtpVerify;
+use App\Livewire\Storefront\PrivacyPage;
 use App\Livewire\Storefront\ProductCatalog;
 use App\Livewire\Storefront\ProductDetail;
 use App\Livewire\Storefront\ScanToPay;
+use App\Livewire\Storefront\TermsPage;
 use App\Livewire\Storefront\VendorShop;
 use App\Livewire\Storefront\Wishlist;
 use App\Livewire\Vendor\Dashboard as VendorDashboard;
@@ -48,6 +53,12 @@ Route::get('/', ProductCatalog::class)->name('storefront.home');
 Route::get('/products/{product:slug}', ProductDetail::class)->name('storefront.product');
 Route::get('/vendors/{vendor:slug}', VendorShop::class)->name('storefront.vendor');
 Route::get('/cart', Cart::class)->name('storefront.cart');
+
+Route::get('/about', AboutPage::class)->name('storefront.about');
+Route::get('/contact', ContactPage::class)->name('storefront.contact');
+Route::get('/faq', FaqPage::class)->name('storefront.faq');
+Route::get('/terms', TermsPage::class)->name('storefront.terms');
+Route::get('/privacy', PrivacyPage::class)->name('storefront.privacy');
 
 Route::middleware('auth')->group(function () {
     Route::get('/checkout', Checkout::class)->name('storefront.checkout');

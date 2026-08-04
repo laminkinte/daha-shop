@@ -120,13 +120,44 @@
     </main>
 
     <footer class="bg-gray-900 text-gray-400 text-sm mt-12 mb-16 md:mb-0">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <span>&copy; {{ date('Y') }} Daha Shop — Pay with cash when your order arrives.</span>
-            @guest
-                <a href="{{ route('register') }}?as=seller" wire:navigate class="text-green-400 hover:text-green-300 font-medium">
-                    Become a Seller &rarr;
-                </a>
-            @endguest
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-2 sm:grid-cols-4 gap-8">
+            <div class="col-span-2 sm:col-span-1">
+                <div class="text-white font-bold text-lg mb-2">Daha <span class="text-green-400">Shop</span></div>
+                <p class="text-xs leading-relaxed">Cash on delivery marketplace &mdash; shop from verified sellers, pay when it arrives.</p>
+            </div>
+
+            <div>
+                <div class="text-white font-semibold text-xs uppercase tracking-wide mb-3">Company</div>
+                <ul class="space-y-2">
+                    <li><a href="{{ route('storefront.about') }}" wire:navigate class="hover:text-white">About Us</a></li>
+                    <li><a href="{{ route('storefront.contact') }}" wire:navigate class="hover:text-white">Contact Us</a></li>
+                    <li><a href="{{ route('register') }}?as=seller" wire:navigate class="hover:text-white">Become a Seller</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <div class="text-white font-semibold text-xs uppercase tracking-wide mb-3">Help</div>
+                <ul class="space-y-2">
+                    <li><a href="{{ route('storefront.faq') }}" wire:navigate class="hover:text-white">FAQ</a></li>
+                    @auth
+                        <li><a href="{{ route('storefront.orders') }}" wire:navigate class="hover:text-white">Track My Order</a></li>
+                    @endauth
+                </ul>
+            </div>
+
+            <div>
+                <div class="text-white font-semibold text-xs uppercase tracking-wide mb-3">Legal</div>
+                <ul class="space-y-2">
+                    <li><a href="{{ route('storefront.terms') }}" wire:navigate class="hover:text-white">Terms of Service</a></li>
+                    <li><a href="{{ route('storefront.privacy') }}" wire:navigate class="hover:text-white">Privacy Policy</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="border-t border-white/10">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-xs">
+                &copy; {{ date('Y') }} Daha Shop. All rights reserved.
+            </div>
         </div>
     </footer>
 
