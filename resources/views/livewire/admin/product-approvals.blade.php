@@ -1,11 +1,14 @@
 <div>
-    <div class="flex items-center gap-2 mb-4 flex-wrap">
-        <button wire:click="$set('filter', 'all')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'all' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">All</button>
-        @foreach ($statuses as $status)
-            <button wire:click="$set('filter', '{{ $status->value }}')" class="text-xs px-3 py-1.5 rounded-full capitalize transition-colors {{ $filter === $status->value ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">
-                {{ str_replace('_', ' ', $status->value) }}
-            </button>
-        @endforeach
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div class="flex items-center gap-2 flex-wrap">
+            <button wire:click="$set('filter', 'all')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'all' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">All</button>
+            @foreach ($statuses as $status)
+                <button wire:click="$set('filter', '{{ $status->value }}')" class="text-xs px-3 py-1.5 rounded-full capitalize transition-colors {{ $filter === $status->value ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                    {{ str_replace('_', ' ', $status->value) }}
+                </button>
+            @endforeach
+        </div>
+        <x-admin.export-button :href="route('admin.products.export', ['filter' => $filter])" />
     </div>
 
     <div class="space-y-4">

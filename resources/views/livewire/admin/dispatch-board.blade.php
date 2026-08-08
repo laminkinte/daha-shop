@@ -1,7 +1,10 @@
 <div>
-    <div class="mb-4">
-        <h2 class="text-lg font-semibold text-gray-900">Dispatch</h2>
-        <p class="text-sm text-gray-500 mt-1">Orders packed and ready to assign to a delivery agent.</p>
+    <div class="flex items-start justify-between mb-4 gap-3">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">Dispatch</h2>
+            <p class="text-sm text-gray-500 mt-1">Orders packed and ready to assign to a delivery agent.</p>
+        </div>
+        <x-admin.export-button :href="route('admin.dispatch.export')" />
     </div>
 
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">

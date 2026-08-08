@@ -88,20 +88,28 @@ Route::post('/webhooks/monnify', MonnifyWebhookController::class)->name('webhook
 Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboard::class)->name('dashboard');
     Route::get('/vendors', VendorApprovals::class)->name('vendors')->middleware('admin.permission:vendors');
+    Route::get('/vendors/export', [ExportController::class, 'vendors'])->name('vendors.export')->middleware('admin.permission:vendors');
     Route::get('/vendors/{vendor}/document/{type}', [VendorDocumentController::class, 'show'])->name('vendors.document')->middleware('admin.permission:vendors');
     Route::get('/products', ProductApprovals::class)->name('products')->middleware('admin.permission:products');
+    Route::get('/products/export', [ExportController::class, 'products'])->name('products.export')->middleware('admin.permission:products');
     Route::get('/orders', OrderOverview::class)->name('orders')->middleware('admin.permission:orders');
     Route::get('/orders/export', [ExportController::class, 'orders'])->name('orders.export')->middleware('admin.permission:orders');
     Route::get('/dispatch', DispatchBoard::class)->name('dispatch')->middleware('admin.permission:dispatch');
+    Route::get('/dispatch/export', [ExportController::class, 'dispatch'])->name('dispatch.export')->middleware('admin.permission:dispatch');
     Route::get('/reconciliation', ReconciliationDashboard::class)->name('reconciliation')->middleware('admin.permission:reconciliation');
     Route::get('/reconciliation/export', [ExportController::class, 'reconciliation'])->name('reconciliation.export')->middleware('admin.permission:reconciliation');
     Route::get('/agents', AgentManager::class)->name('agents')->middleware('admin.permission:agents');
+    Route::get('/agents/export', [ExportController::class, 'agents'])->name('agents.export')->middleware('admin.permission:agents');
     Route::get('/delivery-zones', DeliveryZoneManager::class)->name('delivery-zones')->middleware('admin.permission:delivery-zones');
+    Route::get('/delivery-zones/export', [ExportController::class, 'deliveryZones'])->name('delivery-zones.export')->middleware('admin.permission:delivery-zones');
     Route::get('/blacklist', BlacklistManager::class)->name('blacklist')->middleware('admin.permission:blacklist');
+    Route::get('/blacklist/export', [ExportController::class, 'blacklist'])->name('blacklist.export')->middleware('admin.permission:blacklist');
     Route::get('/payouts', PayoutOverview::class)->name('payouts')->middleware('admin.permission:payouts');
     Route::get('/payouts/export', [ExportController::class, 'payouts'])->name('payouts.export')->middleware('admin.permission:payouts');
     Route::get('/settings', BusinessSettings::class)->name('settings')->middleware('admin.permission:settings');
     Route::get('/admins', AdminManager::class)->name('admins')->middleware('super-admin');
+    Route::get('/admins/export', [ExportController::class, 'admins'])->name('admins.export')->middleware('super-admin');
+    Route::get('/admins/audit-log/export', [ExportController::class, 'adminAuditLog'])->name('admins.audit-log.export')->middleware('super-admin');
 });
 
 Route::middleware(['auth', 'role:agent'])->prefix('agent')->name('agent.')->group(function () {

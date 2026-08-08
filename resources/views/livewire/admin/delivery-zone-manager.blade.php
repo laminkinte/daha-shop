@@ -1,5 +1,6 @@
 <div>
-    <div class="flex justify-end mb-4">
+    <div class="flex justify-end items-center gap-2 mb-4">
+        <x-admin.export-button :href="route('admin.delivery-zones.export')" />
         <button wire:click="openCreateForm" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
             + Add Delivery Zone
         </button>

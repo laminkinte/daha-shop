@@ -68,6 +68,10 @@
         </div>
     @endif
 
+    <div class="flex justify-end mb-3">
+        <x-admin.export-button :href="route('admin.admins.export')" />
+    </div>
+
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
         <table class="min-w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
@@ -117,7 +121,10 @@
     </div>
 
     <div class="mt-8">
-        <h2 class="text-lg font-semibold text-gray-800 mb-3">Recent Admin Activity</h2>
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold text-gray-800">Recent Admin Activity</h2>
+            <x-admin.export-button :href="route('admin.admins.audit-log.export')">Export Audit Log</x-admin.export-button>
+        </div>
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead class="bg-gray-50 text-gray-500 text-xs uppercase">

@@ -6,9 +6,12 @@
                 <button wire:click="$set('filter', '{{ $status->value }}')" class="text-xs px-3 py-1.5 rounded-full capitalize transition-colors {{ $filter === $status->value ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">{{ $status->value }}</button>
             @endforeach
         </div>
-        <button wire:click="$set('showForm', true)" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-            + Add Vendor
-        </button>
+        <div class="flex items-center gap-2">
+            <x-admin.export-button :href="route('admin.vendors.export', ['filter' => $filter])" />
+            <button wire:click="$set('showForm', true)" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                + Add Vendor
+            </button>
+        </div>
     </div>
 
     @if ($showForm)

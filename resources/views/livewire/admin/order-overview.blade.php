@@ -6,9 +6,7 @@
             <button wire:click="$set('filter', 'confirmed')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'confirmed' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">Confirmed</button>
             <button wire:click="$set('filter', 'rejected')" class="text-xs px-3 py-1.5 rounded-full transition-colors {{ $filter === 'rejected' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">Rejected</button>
         </div>
-        <a href="{{ route('admin.orders.export', ['filter' => $filter]) }}" class="text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
-            Export CSV
-        </a>
+        <x-admin.export-button :href="route('admin.orders.export', ['filter' => $filter])" />
     </div>
 
     @php

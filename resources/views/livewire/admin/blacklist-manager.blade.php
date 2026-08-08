@@ -22,6 +22,10 @@
         </div>
     </div>
 
+    <div class="flex justify-end mb-3">
+        <x-admin.export-button :href="route('admin.blacklist.export')" />
+    </div>
+
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
         <table class="min-w-full text-sm">
             <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
