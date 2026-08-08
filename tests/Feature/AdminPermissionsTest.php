@@ -411,4 +411,63 @@ class AdminPermissionsTest extends TestCase
         $this->assertTrue($blockedCustomer->isAdmin());
         $this->assertFalse($blockedCustomer->isBlocked());
     }
+
+    public function test_super_admin_can_resend_credentials_to_a_new_person_admin(): void
+    {
+        Mail::fake();
+
+        $superAdmin = User::factory()->admin()->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->set('name', 'New Admin')
+            ->set('email', 'new-admin@example.com')
+            ->set('selectedPermissions', ['vendors'])
+            ->call('create');
+
+        $target = User::where('email', 'new-admin@example.com')->firstOrFail();
+        $originalHash = $target->password;
+
+        Mail::fake();
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('resendCredentials', $target->id);
+
+        $target->refresh();
+
+        $this->assertNotSame($originalHash, $target->password);
+        $this->assertSame('credentials_resent', \App\Models\AdminActionLog::orderByDesc('id')->first()->action);
+
+        Mail::assertQueued(AdminAccountCreatedMail::class, fn ($mail) => $mail->hasTo($target->email));
+    }
+
+    public function test_super_admin_cannot_resend_credentials_to_their_own_account(): void
+    {
+        $superAdmin = User::factory()->admin()->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('resendCredentials', $superAdmin->id)
+            ->assertStatus(403);
+    }
+
+    public function test_resend_credentials_is_not_offered_for_an_admin_promoted_from_an_existing_user(): void
+    {
+        Mail::fake();
+
+        $superAdmin = User::factory()->admin()->create();
+        $existingCustomer = User::factory()->create();
+
+        $this->actingAs($superAdmin);
+
+        $component = Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->set('createMode', 'existing')
+            ->set('existingEmail', $existingCustomer->email)
+            ->set('selectedPermissions', ['vendors'])
+            ->call('promoteExisting');
+
+        $component->assertDontSee('wire:click="resendCredentials(', false);
+    }
 }

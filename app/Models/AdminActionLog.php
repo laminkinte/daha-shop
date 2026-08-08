@@ -56,6 +56,7 @@ class AdminActionLog extends Model
             'blocked' => 'Account blocked',
             'unblocked' => 'Account unblocked',
             'deleted' => 'Admin account deleted (access fully revoked and blocked)',
+            'credentials_resent' => 'Temporary password reset and resent by email',
             default => ucfirst(str_replace('_', ' ', $this->action)),
         };
     }

@@ -134,6 +134,13 @@
                             @else
                                 <div class="flex items-center gap-3">
                                     <button wire:click="edit({{ $admin->id }})" class="text-xs font-semibold text-green-700 hover:text-green-800">Edit</button>
+                                    @if (str_starts_with($admin->phone, 'admin-'))
+                                        {{-- Only accounts created via "New Person" have a
+                                             throwaway password nobody else relies on - an
+                                             existing user promoted via "Grant Access" keeps
+                                             their normal password, which this must not touch. --}}
+                                        <button wire:click="resendCredentials({{ $admin->id }})" wire:confirm="Reset {{ $admin->name }}'s password and email them a new temporary one?" class="text-xs font-semibold text-gray-600 hover:text-gray-800">Resend Credentials</button>
+                                    @endif
                                     @if ($admin->isBlocked())
                                         <button wire:click="unblock({{ $admin->id }})" class="text-xs font-semibold text-blue-700 hover:text-blue-800">Unblock</button>
                                     @else

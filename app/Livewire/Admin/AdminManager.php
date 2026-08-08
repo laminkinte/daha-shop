@@ -294,6 +294,29 @@ class AdminManager extends Component
         ]);
     }
 
+    /**
+     * The original temporary password is never stored anywhere (only its
+     * hash is), so "resend" can't just re-send what was sent before - it
+     * generates a fresh temporary password, overwrites theirs with it, and
+     * emails it the same way create() does. Useful when the original email
+     * never arrived (e.g. it queued before the mail worker was ready) or
+     * they simply lost it.
+     */
+    public function resendCredentials(int $userId): void
+    {
+        abort_if($userId === auth()->id(), 403);
+
+        $target = User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->findOrFail($userId);
+
+        $password = Str::password(16);
+
+        $target->update(['password' => Hash::make($password)]);
+
+        $this->logAction('credentials_resent', $target, []);
+
+        Mail::to($target->email)->queue(new AdminAccountCreatedMail($target, $password));
+    }
+
     private function logAction(string $action, User $target, array $changes): AdminActionLog
     {
         $actor = auth()->user();
