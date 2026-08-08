@@ -45,6 +45,8 @@ class VendorApprovals extends Component
 
     public ?int $lgaId = null;
 
+    public ?int $trialDays = null;
+
     public function getLgasProperty()
     {
         return $this->stateId ? State::find($this->stateId)?->lgas()->orderBy('name')->get() : collect();
@@ -61,6 +63,7 @@ class VendorApprovals extends Component
             'businessAddress' => 'required|string',
             'stateId' => 'nullable|exists:states,id',
             'lgaId' => 'nullable|exists:lgas,id',
+            'trialDays' => 'nullable|integer|min:1|max:365',
         ]);
 
         $password = Str::password(16);
@@ -85,6 +88,7 @@ class VendorApprovals extends Component
             'lga_id' => $this->lgaId,
             'status' => VendorStatus::Approved,
             'approved_at' => now(),
+            'trial_ends_at' => $this->trialDays ? now()->addDays($this->trialDays) : null,
             'reviewed_by' => Auth::id(),
             'reviewed_at' => now(),
         ]);
@@ -93,7 +97,7 @@ class VendorApprovals extends Component
 
         $this->reset([
             'showForm', 'name', 'email', 'phone',
-            'businessName', 'businessPhone', 'businessAddress', 'stateId', 'lgaId',
+            'businessName', 'businessPhone', 'businessAddress', 'stateId', 'lgaId', 'trialDays',
         ]);
     }
 

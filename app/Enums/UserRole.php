@@ -8,4 +8,5 @@ enum UserRole: string
     case Vendor = 'vendor';
     case Agent = 'agent';
     case Admin = 'admin';
+    case SuperAdmin = 'super_admin';
 }

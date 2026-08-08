@@ -83,6 +83,54 @@ class AdminCreatesVendorTest extends TestCase
             ->assertSee('active subscription');
     }
 
+    public function test_admin_can_grant_a_trial_period_when_creating_a_vendor(): void
+    {
+        Mail::fake();
+
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin);
+
+        $this->fillForm()->set('trialDays', 14)->call('create')->assertHasNoErrors();
+
+        $vendor = Vendor::where('business_name', 'Ada Fashion House')->firstOrFail();
+
+        $this->assertNotNull($vendor->trial_ends_at);
+        $this->assertTrue($vendor->trial_ends_at->isSameDay(now()->addDays(14)));
+        $this->assertTrue($vendor->onTrial());
+        $this->assertTrue($vendor->hasStoreAccess());
+
+        $vendorUser = $vendor->user;
+        $this->actingAs($vendorUser);
+
+        Livewire::test(ProductManager::class)
+            ->call('create')
+            ->assertSet('showForm', true)
+            ->assertSet('subscriptionRequired', false);
+    }
+
+    public function test_vendor_trial_expiring_requires_a_subscription_again(): void
+    {
+        Mail::fake();
+
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin);
+
+        $this->fillForm()->set('trialDays', 3)->call('create');
+
+        $vendorUser = User::where('email', 'ada-shop@example.com')->firstOrFail();
+
+        $this->travel(4)->days();
+
+        $this->assertFalse($vendorUser->vendor->fresh()->hasStoreAccess());
+
+        $this->actingAs($vendorUser);
+
+        Livewire::test(ProductManager::class)
+            ->call('create')
+            ->assertSet('showForm', false)
+            ->assertSet('subscriptionRequired', true);
+    }
+
     public function test_duplicate_email_shows_a_validation_error(): void
     {
         Mail::fake();

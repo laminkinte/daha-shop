@@ -48,6 +48,24 @@ class RoleAccessTest extends TestCase
         $this->actingAs($customer)->get(route('agent.deliveries'))->assertForbidden();
     }
 
+    public function test_dashboard_route_redirects_each_role_to_its_own_dashboard(): void
+    {
+        $vendorUser = User::factory()->vendor()->create();
+        $this->actingAs($vendorUser)->get(route('dashboard'))->assertRedirect(route('vendor.dashboard'));
+
+        $scopedAdmin = User::factory()->scopedAdmin([])->create();
+        $this->actingAs($scopedAdmin)->get(route('dashboard'))->assertRedirect(route('admin.dashboard'));
+
+        $superAdmin = User::factory()->admin()->create();
+        $this->actingAs($superAdmin)->get(route('dashboard'))->assertRedirect(route('admin.dashboard'));
+
+        $agentUser = User::factory()->agent()->create();
+        $this->actingAs($agentUser)->get(route('dashboard'))->assertRedirect(route('agent.deliveries'));
+
+        $customer = User::factory()->create();
+        $this->actingAs($customer)->get(route('dashboard'))->assertRedirect(route('storefront.home'));
+    }
+
     public function test_guests_are_redirected_to_login_for_protected_routes(): void
     {
         $this->get(route('vendor.dashboard'))->assertRedirect(route('login'));

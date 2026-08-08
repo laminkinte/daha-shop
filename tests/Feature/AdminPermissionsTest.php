@@ -52,7 +52,7 @@ class AdminPermissionsTest extends TestCase
         $created = User::where('email', 'new-admin@example.com')->firstOrFail();
 
         $this->assertTrue($created->isAdmin());
-        $this->assertFalse($created->is_super_admin);
+        $this->assertFalse($created->isSuperAdmin());
         $this->assertSame(['vendors'], $created->admin_permissions);
 
         Mail::assertQueued(AdminAccountCreatedMail::class, fn ($mail) => $mail->hasTo('new-admin@example.com'));
@@ -119,7 +119,7 @@ class AdminPermissionsTest extends TestCase
         $otherSuperAdmin->refresh();
 
         $this->assertTrue($otherSuperAdmin->isCustomer());
-        $this->assertFalse($otherSuperAdmin->is_super_admin);
+        $this->assertFalse($otherSuperAdmin->isSuperAdmin());
     }
 
     public function test_super_admin_can_revoke_a_scoped_admin(): void
@@ -135,7 +135,7 @@ class AdminPermissionsTest extends TestCase
         $scopedAdmin->refresh();
 
         $this->assertTrue($scopedAdmin->isCustomer());
-        $this->assertFalse($scopedAdmin->is_super_admin);
+        $this->assertFalse($scopedAdmin->isSuperAdmin());
         $this->assertNull($scopedAdmin->admin_permissions);
 
         $this->actingAs($scopedAdmin)->get(route('admin.vendors'))->assertForbidden();

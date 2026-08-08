@@ -60,8 +60,7 @@ class UserFactory extends Factory
     public function admin(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role' => UserRole::Admin,
-            'is_super_admin' => true,
+            'role' => UserRole::SuperAdmin,
         ]);
     }
 
@@ -69,7 +68,6 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => UserRole::Admin,
-            'is_super_admin' => false,
             'admin_permissions' => $permissions,
         ]);
     }

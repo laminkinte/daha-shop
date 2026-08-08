@@ -31,7 +31,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'role',
         'password',
         'uses_pin',
-        'is_super_admin',
         'admin_permissions',
     ];
 
@@ -58,7 +57,6 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'role' => UserRole::class,
             'uses_pin' => 'boolean',
-            'is_super_admin' => 'boolean',
             'admin_permissions' => 'array',
         ];
     }
@@ -110,12 +108,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isAdmin(): bool
     {
-        return $this->role === UserRole::Admin;
+        return in_array($this->role, [UserRole::Admin, UserRole::SuperAdmin], true);
     }
 
     public function isSuperAdmin(): bool
     {
-        return $this->isAdmin() && (bool) $this->is_super_admin;
+        return $this->role === UserRole::SuperAdmin;
     }
 
     public function hasAdminPermission(AdminPermission $permission): bool
@@ -124,7 +122,7 @@ class User extends Authenticatable implements MustVerifyEmail
             return true;
         }
 
-        return $this->isAdmin() && in_array($permission->value, $this->admin_permissions ?? [], true);
+        return $this->role === UserRole::Admin && in_array($permission->value, $this->admin_permissions ?? [], true);
     }
 
     public function isPhoneVerified(): bool

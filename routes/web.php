@@ -85,7 +85,7 @@ Route::post('/webhooks/paystack', PaystackWebhookController::class)->name('webho
 Route::post('/webhooks/opay', OpayWebhookController::class)->name('webhooks.opay');
 Route::post('/webhooks/monnify', MonnifyWebhookController::class)->name('webhooks.monnify');
 
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboard::class)->name('dashboard');
     Route::get('/vendors', VendorApprovals::class)->name('vendors')->middleware('admin.permission:vendors');
     Route::get('/vendors/{vendor}/document/{type}', [VendorDocumentController::class, 'show'])->name('vendors.document')->middleware('admin.permission:vendors');

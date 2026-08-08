@@ -20,8 +20,7 @@ class SuperAdminSeeder extends Seeder
             [
                 'name' => 'Daha Shop Super Admin',
                 'phone' => '+2348099999999',
-                'role' => UserRole::Admin,
-                'is_super_admin' => true,
+                'role' => UserRole::SuperAdmin,
                 'password' => 'password',
                 'email_verified_at' => now(),
                 'phone_verified_at' => now(),

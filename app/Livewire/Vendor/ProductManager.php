@@ -42,7 +42,7 @@ class ProductManager extends Component
 
     public function create(): void
     {
-        if (! Auth::user()->vendor->hasActiveSubscription()) {
+        if (! Auth::user()->vendor->hasStoreAccess()) {
             $this->subscriptionRequired = true;
 
             return;
@@ -96,7 +96,7 @@ class ProductManager extends Component
 
     private function persist(?ProductStatus $status): void
     {
-        if (! $this->editingId && ! Auth::user()->vendor->hasActiveSubscription()) {
+        if (! $this->editingId && ! Auth::user()->vendor->hasStoreAccess()) {
             $this->subscriptionRequired = true;
             $this->showForm = false;
 

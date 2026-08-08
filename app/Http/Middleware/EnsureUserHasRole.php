@@ -9,9 +9,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserHasRole
 {
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        abort_unless($request->user()?->role === UserRole::from($role), 403);
+        $allowed = array_map(fn (string $role) => UserRole::from($role), $roles);
+
+        abort_unless(in_array($request->user()?->role, $allowed, true), 403);
 
         return $next($request);
     }

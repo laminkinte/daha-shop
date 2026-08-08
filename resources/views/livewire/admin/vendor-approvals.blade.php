@@ -74,6 +74,15 @@
                             @error('lgaId') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                         </div>
                     </div>
+
+                    <hr class="border-gray-100">
+
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Trial period, in days (optional)</label>
+                        <input type="number" min="1" max="365" wire:model="trialDays" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        <p class="text-xs text-gray-400 mt-1">Vendor can list products without paying for a subscription until the trial ends. Leave blank for no trial.</p>
+                        @error('trialDays') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                    </div>
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
                     <button wire:click="$set('showForm', false)" class="text-sm text-gray-600 px-4 py-2 hover:text-gray-800">Cancel</button>

@@ -58,7 +58,6 @@ class AdminManager extends Component
             'phone' => 'admin-'.Str::random(12),
             'password' => Hash::make($password),
             'role' => UserRole::Admin,
-            'is_super_admin' => false,
             'admin_permissions' => $this->selectedPermissions,
             'email_verified_at' => now(),
         ]);
@@ -77,10 +76,10 @@ class AdminManager extends Component
         // just like a scoped admin.
         abort_if($userId === auth()->id(), 403);
 
-        $target = User::where('role', UserRole::Admin)->findOrFail($userId);
+        $target = User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->findOrFail($userId);
 
         $this->editingUserId = $target->id;
-        $this->editingIsSuperAdmin = $target->is_super_admin;
+        $this->editingIsSuperAdmin = $target->role === UserRole::SuperAdmin;
         $this->editingPermissions = $target->admin_permissions ?? [];
     }
 
@@ -88,7 +87,7 @@ class AdminManager extends Component
     {
         abort_if($this->editingUserId === auth()->id(), 403);
 
-        $target = User::where('role', UserRole::Admin)->findOrFail($this->editingUserId);
+        $target = User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->findOrFail($this->editingUserId);
 
         $this->validate([
             'editingPermissions' => 'array',
@@ -96,12 +95,12 @@ class AdminManager extends Component
         ]);
 
         $before = [
-            'is_super_admin' => $target->is_super_admin,
+            'is_super_admin' => $target->role === UserRole::SuperAdmin,
             'admin_permissions' => $target->admin_permissions,
         ];
 
         $target->update([
-            'is_super_admin' => $this->editingIsSuperAdmin,
+            'role' => $this->editingIsSuperAdmin ? UserRole::SuperAdmin : UserRole::Admin,
             // A super-admin bypasses permission checks entirely, so there's
             // nothing meaningful to store for them - only scoped admins keep
             // an explicit permission list.
@@ -109,7 +108,7 @@ class AdminManager extends Component
         ]);
 
         $after = [
-            'is_super_admin' => $target->is_super_admin,
+            'is_super_admin' => $target->role === UserRole::SuperAdmin,
             'admin_permissions' => $target->admin_permissions,
         ];
 
@@ -134,10 +133,10 @@ class AdminManager extends Component
     {
         abort_if($userId === auth()->id(), 403);
 
-        $target = User::where('role', UserRole::Admin)->findOrFail($userId);
+        $target = User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->findOrFail($userId);
 
         $before = [
-            'is_super_admin' => $target->is_super_admin,
+            'is_super_admin' => $target->role === UserRole::SuperAdmin,
             'admin_permissions' => $target->admin_permissions,
         ];
 
@@ -146,7 +145,6 @@ class AdminManager extends Component
 
         $target->update([
             'role' => UserRole::Customer,
-            'is_super_admin' => false,
             'admin_permissions' => null,
         ]);
     }
@@ -180,7 +178,7 @@ class AdminManager extends Component
 
     public function render()
     {
-        $admins = User::where('role', UserRole::Admin)->orderBy('name')->get();
+        $admins = User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->orderBy('name')->get();
         $auditLog = AdminActionLog::with('actor', 'target')->latest()->paginate(15);
 
         return view('livewire.admin.admin-manager', [

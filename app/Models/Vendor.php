@@ -12,7 +12,7 @@ class Vendor extends Model
     protected $fillable = [
         'user_id', 'business_name', 'slug', 'business_phone', 'business_address',
         'state_id', 'lga_id', 'cac_number', 'status',
-        'bank_name', 'bank_account_number', 'bank_account_name', 'approved_at',
+        'bank_name', 'bank_account_number', 'bank_account_name', 'approved_at', 'trial_ends_at',
         'id_document_type', 'id_document_path', 'selfie_path',
         'id_document_rejection_reason', 'selfie_rejection_reason', 'reviewed_by', 'reviewed_at',
         'current_lat', 'current_lng', 'location_updated_at',
@@ -23,6 +23,7 @@ class Vendor extends Model
         return [
             'status' => VendorStatus::class,
             'approved_at' => 'datetime',
+            'trial_ends_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'current_lat' => 'decimal:7',
             'current_lng' => 'decimal:7',
@@ -82,6 +83,21 @@ class Vendor extends Model
     public function hasActiveSubscription(): bool
     {
         return $this->activeSubscription() !== null;
+    }
+
+    public function onTrial(): bool
+    {
+        return $this->trial_ends_at !== null && $this->trial_ends_at->isFuture();
+    }
+
+    /**
+     * Whether the vendor can list/sell products right now, either because
+     * they've paid for a subscription or because they're still within a
+     * trial period an admin granted them at creation time.
+     */
+    public function hasStoreAccess(): bool
+    {
+        return $this->hasActiveSubscription() || $this->onTrial();
     }
 
     public function isApproved(): bool

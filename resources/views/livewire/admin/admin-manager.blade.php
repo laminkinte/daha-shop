@@ -84,7 +84,7 @@
                         <td class="px-4 py-3 font-medium">{{ $admin->name }}</td>
                         <td class="px-4 py-3 text-gray-500">{{ $admin->email }}</td>
                         <td class="px-4 py-3">
-                            @if ($admin->is_super_admin)
+                            @if ($admin->isSuperAdmin())
                                 <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700">Super Admin</span>
                             @else
                                 <div class="flex flex-wrap gap-1">
