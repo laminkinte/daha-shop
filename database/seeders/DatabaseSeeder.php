@@ -17,7 +17,11 @@ class DatabaseSeeder extends Seeder
         $this->call([
             NigeriaGeographySeeder::class,
             CategorySeeder::class,
-            DemoDataSeeder::class,
+            SuperAdminSeeder::class,
         ]);
+
+        if (app()->environment(['local', 'testing'])) {
+            $this->call(DemoDataSeeder::class);
+        }
     }
 }
