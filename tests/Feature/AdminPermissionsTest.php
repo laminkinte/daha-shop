@@ -307,4 +307,108 @@ class AdminPermissionsTest extends TestCase
         $component->call('reinstate', $log->id)
             ->assertDontSee('wire:click="reinstate(', false);
     }
+
+    public function test_cannot_grant_access_to_a_nonexistent_email(): void
+    {
+        $superAdmin = User::factory()->admin()->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->set('createMode', 'existing')
+            ->set('existingEmail', 'nobody-here@example.com')
+            ->call('promoteExisting')
+            ->assertHasErrors('existingEmail');
+    }
+
+    public function test_super_admin_can_block_and_unblock_an_admin(): void
+    {
+        Mail::fake();
+
+        $superAdmin = User::factory()->admin()->create();
+        $scopedAdmin = User::factory()->scopedAdmin(['vendors'])->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('block', $scopedAdmin->id);
+
+        $this->assertTrue($scopedAdmin->fresh()->isBlocked());
+        // Blocking doesn't touch their standing - still a scoped admin with
+        // the same permissions once unblocked.
+        $this->assertTrue($scopedAdmin->fresh()->isAdmin());
+        $this->assertSame(['vendors'], $scopedAdmin->fresh()->admin_permissions);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('unblock', $scopedAdmin->id);
+
+        $this->assertFalse($scopedAdmin->fresh()->isBlocked());
+    }
+
+    public function test_super_admin_cannot_block_their_own_account(): void
+    {
+        $superAdmin = User::factory()->admin()->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('block', $superAdmin->id)
+            ->assertStatus(403);
+    }
+
+    public function test_super_admin_can_delete_an_admin_account(): void
+    {
+        Mail::fake();
+
+        $superAdmin = User::factory()->admin()->create();
+        $scopedAdmin = User::factory()->scopedAdmin(['vendors'])->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('deleteAdmin', $scopedAdmin->id);
+
+        $scopedAdmin->refresh();
+
+        $this->assertTrue($scopedAdmin->isCustomer());
+        $this->assertTrue($scopedAdmin->isBlocked());
+        $this->assertNull($scopedAdmin->admin_permissions);
+
+        // The account itself still exists - deleteAdmin() never touches the
+        // users row, only role/permissions/blocked_at.
+        $this->assertDatabaseHas('users', ['id' => $scopedAdmin->id]);
+        $this->assertSame('deleted', \App\Models\AdminActionLog::orderByDesc('id')->first()->action);
+    }
+
+    public function test_super_admin_cannot_delete_their_own_account(): void
+    {
+        $superAdmin = User::factory()->admin()->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('deleteAdmin', $superAdmin->id)
+            ->assertStatus(403);
+    }
+
+    public function test_granting_access_to_an_existing_user_clears_any_block(): void
+    {
+        Mail::fake();
+
+        $superAdmin = User::factory()->admin()->create();
+        $blockedCustomer = User::factory()->create(['blocked_at' => now()]);
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->set('createMode', 'existing')
+            ->set('existingEmail', $blockedCustomer->email)
+            ->set('selectedPermissions', ['vendors'])
+            ->call('promoteExisting');
+
+        $blockedCustomer->refresh();
+
+        $this->assertTrue($blockedCustomer->isAdmin());
+        $this->assertFalse($blockedCustomer->isBlocked());
+    }
 }

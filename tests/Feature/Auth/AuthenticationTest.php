@@ -82,6 +82,34 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('storefront.home'));
     }
 
+    public function test_a_blocked_user_cannot_authenticate_even_with_the_correct_password(): void
+    {
+        $user = User::factory()->create(['blocked_at' => now()]);
+
+        $component = Volt::test('pages.auth.login')
+            ->set('form.login', $user->email)
+            ->set('form.password', 'password');
+
+        $component->call('login');
+
+        $component->assertHasErrors()->assertNoRedirect();
+
+        $this->assertGuest();
+    }
+
+    public function test_blocking_a_user_mid_session_logs_them_out_on_their_next_request(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user);
+
+        $user->update(['blocked_at' => now()]);
+
+        $this->get(route('storefront.home'))->assertRedirect(route('login'));
+
+        $this->assertGuest();
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();

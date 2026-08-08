@@ -31,6 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/opay',
         ]);
 
+        $middleware->web(append: [
+            \App\Http\Middleware\EnsureAccountIsNotBlocked::class,
+        ]);
+
         // Needed so Laravel correctly sees requests as HTTPS when the local
         // dev server sits behind a tunnel (e.g. cloudflared/ngrok) - without
         // this, generated asset/redirect URLs come back http:// even though

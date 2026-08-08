@@ -111,10 +111,10 @@
                         <td class="px-4 py-3 font-medium">{{ $admin->name }}</td>
                         <td class="px-4 py-3 text-gray-500">{{ $admin->email }}</td>
                         <td class="px-4 py-3">
-                            @if ($admin->isSuperAdmin())
-                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700">Super Admin</span>
-                            @else
-                                <div class="flex flex-wrap gap-1">
+                            <div class="flex flex-wrap gap-1">
+                                @if ($admin->isSuperAdmin())
+                                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700">Super Admin</span>
+                                @else
                                     @forelse ($admin->admin_permissions ?? [] as $value)
                                         <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                                             {{ \App\Enums\AdminPermission::from($value)->label() }}
@@ -122,8 +122,11 @@
                                     @empty
                                         <span class="text-xs text-gray-400">No access granted</span>
                                     @endforelse
-                                </div>
-                            @endif
+                                @endif
+                                @if ($admin->isBlocked())
+                                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-red-50 text-red-700">Blocked</span>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-4 py-3">
                             @if ($admin->id === auth()->id())
@@ -131,7 +134,13 @@
                             @else
                                 <div class="flex items-center gap-3">
                                     <button wire:click="edit({{ $admin->id }})" class="text-xs font-semibold text-green-700 hover:text-green-800">Edit</button>
+                                    @if ($admin->isBlocked())
+                                        <button wire:click="unblock({{ $admin->id }})" class="text-xs font-semibold text-blue-700 hover:text-blue-800">Unblock</button>
+                                    @else
+                                        <button wire:click="block({{ $admin->id }})" wire:confirm="Block {{ $admin->name }}? They won't be able to log in at all until unblocked, but keep their current permissions." class="text-xs font-semibold text-amber-600 hover:text-amber-700">Block</button>
+                                    @endif
                                     <button wire:click="revoke({{ $admin->id }})" wire:confirm="Remove this admin's access? They will become a regular customer account." class="text-xs font-semibold text-red-600 hover:text-red-700">Revoke</button>
+                                    <button wire:click="deleteAdmin({{ $admin->id }})" wire:confirm="Delete {{ $admin->name }}'s admin account? This removes admin access AND blocks them from logging in at all. Their underlying account and order/vendor history, if any, are kept." class="text-xs font-semibold text-red-700 hover:text-red-800">Delete</button>
                                 </div>
                             @endif
                         </td>

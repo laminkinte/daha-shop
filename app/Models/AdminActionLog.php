@@ -53,6 +53,9 @@ class AdminActionLog extends Model
             'reinstated' => ($this->changes['is_super_admin'] ?? false)
                 ? 'Reinstated as Super Admin'
                 : 'Reinstated with permissions: '.$labels($this->changes['restored_permissions'] ?? []),
+            'blocked' => 'Account blocked',
+            'unblocked' => 'Account unblocked',
+            'deleted' => 'Admin account deleted (access fully revoked and blocked)',
             default => ucfirst(str_replace('_', ' ', $this->action)),
         };
     }

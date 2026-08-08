@@ -56,6 +56,17 @@ class LoginForm extends Form
             ]);
         }
 
+        // The credentials were correct, so telling them why they're being
+        // turned away isn't an account-enumeration risk the way it would be
+        // pre-auth - they've already proven they hold this account.
+        if (Auth::user()->isBlocked()) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'form.login' => 'This account has been blocked. Contact an administrator.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

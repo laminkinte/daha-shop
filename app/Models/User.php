@@ -32,6 +32,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'uses_pin',
         'admin_permissions',
+        'blocked_at',
     ];
 
     /**
@@ -58,6 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'role' => UserRole::class,
             'uses_pin' => 'boolean',
             'admin_permissions' => 'array',
+            'blocked_at' => 'datetime',
         ];
     }
 
@@ -123,6 +125,11 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $this->role === UserRole::Admin && in_array($permission->value, $this->admin_permissions ?? [], true);
+    }
+
+    public function isBlocked(): bool
+    {
+        return $this->blocked_at !== null;
     }
 
     public function isPhoneVerified(): bool

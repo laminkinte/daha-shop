@@ -83,12 +83,18 @@ class AdminManager extends Component
     public function promoteExisting(): void
     {
         $this->validate([
-            'existingEmail' => 'required|email|exists:users,email',
+            'existingEmail' => 'required|email',
             'selectedPermissions' => 'array',
             'selectedPermissions.*' => 'in:'.implode(',', array_column(AdminPermission::cases(), 'value')),
         ]);
 
-        $target = User::where('email', $this->existingEmail)->firstOrFail();
+        $target = User::where('email', $this->existingEmail)->first();
+
+        if (! $target) {
+            $this->addError('existingEmail', 'No user found with that email.');
+
+            return;
+        }
 
         abort_if($target->id === auth()->id(), 403);
 
@@ -101,6 +107,10 @@ class AdminManager extends Component
         $target->update([
             'role' => UserRole::Admin,
             'admin_permissions' => $this->selectedPermissions,
+            // They're being actively granted access right now - leaving
+            // them blocked would mean "admin, but still can't log in",
+            // which is never what granting access is meant to produce.
+            'blocked_at' => null,
         ]);
 
         $log = $this->logAction('granted', $target, ['permissions' => $this->selectedPermissions]);
@@ -228,6 +238,60 @@ class AdminManager extends Component
         ]);
 
         $this->notifyTarget($target, $newLog->summary());
+    }
+
+    /**
+     * Blocking is deliberately separate from revoke: it leaves their role
+     * and permissions untouched and just refuses login (enforced in
+     * LoginForm and, for an already-open session, EnsureAccountIsNotBlocked)
+     * - unblocking hands back exactly what they had, with nothing to redo.
+     */
+    public function block(int $userId): void
+    {
+        abort_if($userId === auth()->id(), 403);
+
+        $target = User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->findOrFail($userId);
+
+        $target->update(['blocked_at' => now()]);
+
+        $log = $this->logAction('blocked', $target, []);
+        $this->notifyTarget($target, $log->summary());
+    }
+
+    public function unblock(int $userId): void
+    {
+        abort_if($userId === auth()->id(), 403);
+
+        $target = User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->findOrFail($userId);
+
+        $target->update(['blocked_at' => null]);
+
+        $log = $this->logAction('unblocked', $target, []);
+        $this->notifyTarget($target, $log->summary());
+    }
+
+    /**
+     * The strongest action available here: unlike revoke (which leaves them
+     * a working customer account), delete removes admin standing AND blocks
+     * login entirely. It never touches the `users` row itself - the account
+     * and all its other data (orders, a vendor profile if this admin was
+     * promoted from one, etc.) stay completely intact, so nothing elsewhere
+     * in the app that references this user silently breaks.
+     */
+    public function deleteAdmin(int $userId): void
+    {
+        abort_if($userId === auth()->id(), 403);
+
+        $target = User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->findOrFail($userId);
+
+        $log = $this->logAction('deleted', $target, []);
+        $this->notifyTarget($target, $log->summary());
+
+        $target->update([
+            'role' => UserRole::Customer,
+            'admin_permissions' => null,
+            'blocked_at' => now(),
+        ]);
     }
 
     private function logAction(string $action, User $target, array $changes): AdminActionLog
