@@ -45,10 +45,14 @@ class AdminActionLog extends Model
 
         return match ($this->action) {
             'created' => 'Created with permissions: '.$labels($this->changes['permissions'] ?? []),
+            'granted' => 'Granted admin access with permissions: '.$labels($this->changes['permissions'] ?? []),
             'promoted' => 'Promoted to Super Admin',
             'demoted' => 'Demoted to scoped admin ('.$labels($this->changes['after']['admin_permissions'] ?? []).')',
             'permissions_updated' => 'Permissions changed to: '.$labels($this->changes['after']['admin_permissions'] ?? []),
             'revoked' => 'Admin access revoked',
+            'reinstated' => ($this->changes['is_super_admin'] ?? false)
+                ? 'Reinstated as Super Admin'
+                : 'Reinstated with permissions: '.$labels($this->changes['restored_permissions'] ?? []),
             default => ucfirst(str_replace('_', ' ', $this->action)),
         };
     }

@@ -203,4 +203,108 @@ class AdminPermissionsTest extends TestCase
             ->call('edit', $superAdmin->id)
             ->assertStatus(403);
     }
+
+    public function test_super_admin_can_grant_access_to_an_existing_customer(): void
+    {
+        Mail::fake();
+
+        $superAdmin = User::factory()->admin()->create();
+        $customer = User::factory()->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->set('createMode', 'existing')
+            ->set('existingEmail', $customer->email)
+            ->set('selectedPermissions', ['vendors'])
+            ->call('promoteExisting')
+            ->assertHasNoErrors();
+
+        $customer->refresh();
+
+        $this->assertTrue($customer->isAdmin());
+        $this->assertFalse($customer->isSuperAdmin());
+        $this->assertSame(['vendors'], $customer->admin_permissions);
+
+        Mail::assertQueued(\App\Mail\AdminAccessChangedMail::class, fn ($mail) => $mail->hasTo($customer->email));
+    }
+
+    public function test_cannot_grant_access_to_a_user_who_is_already_admin(): void
+    {
+        $superAdmin = User::factory()->admin()->create();
+        $existingAdmin = User::factory()->scopedAdmin(['vendors'])->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->set('createMode', 'existing')
+            ->set('existingEmail', $existingAdmin->email)
+            ->call('promoteExisting')
+            ->assertHasErrors('existingEmail');
+    }
+
+    public function test_a_revoked_scoped_admin_can_be_reinstated_with_their_previous_permissions(): void
+    {
+        Mail::fake();
+
+        $superAdmin = User::factory()->admin()->create();
+        $scopedAdmin = User::factory()->scopedAdmin(['vendors', 'products'])->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('revoke', $scopedAdmin->id);
+
+        $this->assertTrue($scopedAdmin->fresh()->isCustomer());
+
+        $log = \App\Models\AdminActionLog::where('action', 'revoked')->where('target_id', $scopedAdmin->id)->firstOrFail();
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('reinstate', $log->id);
+
+        $scopedAdmin->refresh();
+
+        $this->assertTrue($scopedAdmin->isAdmin());
+        $this->assertFalse($scopedAdmin->isSuperAdmin());
+        $this->assertSame(['vendors', 'products'], $scopedAdmin->admin_permissions);
+        $this->assertSame('reinstated', \App\Models\AdminActionLog::orderByDesc('id')->first()->action);
+    }
+
+    public function test_a_revoked_super_admin_is_reinstated_as_super_admin(): void
+    {
+        Mail::fake();
+
+        $superAdmin = User::factory()->admin()->create();
+        $otherSuperAdmin = User::factory()->admin()->create();
+
+        $this->actingAs($superAdmin);
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('revoke', $otherSuperAdmin->id);
+
+        $log = \App\Models\AdminActionLog::where('action', 'revoked')->where('target_id', $otherSuperAdmin->id)->firstOrFail();
+
+        Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('reinstate', $log->id);
+
+        $this->assertTrue($otherSuperAdmin->fresh()->isSuperAdmin());
+    }
+
+    public function test_reinstate_button_only_shows_for_revoked_admins_not_already_reinstated(): void
+    {
+        $superAdmin = User::factory()->admin()->create();
+        $scopedAdmin = User::factory()->scopedAdmin(['vendors'])->create();
+
+        $this->actingAs($superAdmin);
+
+        $component = Livewire::test(\App\Livewire\Admin\AdminManager::class)
+            ->call('revoke', $scopedAdmin->id);
+
+        $component->assertSee('wire:click="reinstate(', false);
+
+        $log = \App\Models\AdminActionLog::where('action', 'revoked')->where('target_id', $scopedAdmin->id)->firstOrFail();
+
+        $component->call('reinstate', $log->id)
+            ->assertDontSee('wire:click="reinstate(', false);
+    }
 }

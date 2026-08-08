@@ -8,19 +8,38 @@
     @if ($showForm)
         <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-xl border border-gray-100 shadow-xl w-full max-w-lg p-6">
-                <h2 class="font-semibold text-lg mb-4">Create Admin</h2>
+                <h2 class="font-semibold text-lg mb-4">{{ $createMode === 'existing' ? 'Grant Admin Access' : 'Create Admin' }}</h2>
+
+                <div class="flex gap-2 mb-4">
+                    <button type="button" wire:click="$set('createMode', 'new')" class="text-xs font-semibold px-3 py-1.5 rounded-full transition-colors {{ $createMode === 'new' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                        New Person
+                    </button>
+                    <button type="button" wire:click="$set('createMode', 'existing')" class="text-xs font-semibold px-3 py-1.5 rounded-full transition-colors {{ $createMode === 'existing' ? 'bg-green-700 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+                        Existing User
+                    </button>
+                </div>
+
                 <div class="space-y-4">
-                    <div>
-                        <label class="text-sm font-medium text-gray-700">Name</label>
-                        <input type="text" wire:model="name" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
-                        @error('name') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" wire:model="email" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
-                        @error('email') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
-                        <p class="text-xs text-gray-400 mt-1">A temporary password will be generated and emailed to this address.</p>
-                    </div>
+                    @if ($createMode === 'existing')
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">Email of existing user</label>
+                            <input type="email" wire:model="existingEmail" placeholder="someone@example.com" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                            @error('existingEmail') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                            <p class="text-xs text-gray-400 mt-1">Grants admin access to an existing customer, vendor, or agent account &mdash; including someone whose admin access was previously revoked. They keep their current password.</p>
+                        </div>
+                    @else
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">Name</label>
+                            <input type="text" wire:model="name" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                            @error('name') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">Email</label>
+                            <input type="email" wire:model="email" class="mt-1 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500">
+                            @error('email') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                            <p class="text-xs text-gray-400 mt-1">A temporary password will be generated and emailed to this address.</p>
+                        </div>
+                    @endif
                     <div>
                         <label class="text-sm font-medium text-gray-700">Permissions</label>
                         <div class="mt-2 grid grid-cols-2 gap-2">
@@ -34,8 +53,12 @@
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
-                    <button wire:click="$set('showForm', false)" class="text-sm text-gray-600 px-4 py-2 hover:text-gray-800">Cancel</button>
-                    <button wire:click="create" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">Create</button>
+                    <button wire:click="cancelCreate" class="text-sm text-gray-600 px-4 py-2 hover:text-gray-800">Cancel</button>
+                    @if ($createMode === 'existing')
+                        <button wire:click="promoteExisting" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">Grant Access</button>
+                    @else
+                        <button wire:click="create" class="bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">Create</button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -133,6 +156,7 @@
                         <th class="px-4 py-3 text-left">Actor</th>
                         <th class="px-4 py-3 text-left">Target</th>
                         <th class="px-4 py-3 text-left">What changed</th>
+                        <th class="px-4 py-3 text-left">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -142,9 +166,16 @@
                             <td class="px-4 py-3">{{ $log->actor_name }}</td>
                             <td class="px-4 py-3">{{ $log->target_name }}</td>
                             <td class="px-4 py-3 text-gray-600">{{ $log->summary() }}</td>
+                            <td class="px-4 py-3">
+                                @if ($log->action === 'revoked' && $log->target && $log->target->id !== auth()->id() && ! $log->target->isAdmin())
+                                    <button wire:click="reinstate({{ $log->id }})" wire:confirm="Reinstate {{ $log->target_name }}'s previous admin access?" class="text-xs font-semibold text-green-700 hover:text-green-800">
+                                        Reinstate
+                                    </button>
+                                @endif
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No admin activity yet.</td></tr>
+                        <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No admin activity yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>
